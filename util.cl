@@ -23,8 +23,11 @@
 
 (defpackage :ztree.util
   (:use :common-lisp)
-  (:export :printable-string   
+  (:export :message
+           :printable-string   
            :file-short-name
+           :newline
+           :beginning-of-line
            :newline-and-begin
            :car-atom
            :insert-with-face
@@ -35,6 +38,8 @@
 
 (require 'cl-ncurses)
 
+(defun message (str))
+
 (defun printable-string (string)
   "Strip newline character from file names, like 'Icon\n'"
   (remove-if #'(lambda (x) (or (char= x #\return) (char= x #\linefeed))) string))
@@ -43,11 +48,12 @@
   "Base file/directory name"
   (pathname-name (parse-namestring file)))
 
+(defun newline () )
+(defun beginning-of-line () )
 
 (defun newline-and-begin ()
-  (error 'not-implemented "Not implemented newline-and-begin"))
-;; (newline)
-;; (beginning-of-line))
+  (newline)
+  (beginning-of-line))
 
 (defun car-atom (value)
   "Returns value if value is an atom, otherwise (car value) or nil.
@@ -64,7 +70,10 @@ Used since car-safe returns nil for atoms"
   
 (defun file-directory-p (filename)
   "Returns t if `filename' exists and is a directory, nil otherwise"
-  (when (probe-file filename)
-    (pathname-name filename)))
+  (let ((p (probe-file filename)))
+    (if p
+        (not (pathname-name p))
+        (error 'not-exists (format t "File ~a not exists" filename)))))
+
 
 ;;; util.cl ends here
