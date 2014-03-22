@@ -21,8 +21,11 @@
 
 ;;; Code:
 
+(require 'cl-fad)
+
 (defpackage :ztree.util
   (:use :common-lisp)
+  (:use :common-lisp :cl-fad)
   (:export :message
            :printable-string   
            :file-short-name
@@ -32,13 +35,67 @@
            :car-atom
            :insert-with-face
            :file-directory-p
+           :directory-files
+           :concat
            ))
 
 (in-package :ztree.util)
 
-(require 'cl-ncurses)
+;;(require 'cl-ncurses)
 
-(defun message (str))
+
+;; Based on http://abcl.org/svn/trunk/abcl/build-abcl.lisp
+
+;; Platform detection.
+(defun platform ()
+  #-clisp
+  (let ((software-type (software-type)))
+    (cond ((search "Linux" software-type)
+           :linux)
+          ((or (search "Mac OS X" software-type) ; abcl
+               (search "Darwin" software-type))  ; sbcl
+           :darwin)
+          ((search "Windows" software-type)
+           :windows)
+          (t
+           :unknown)))
+  #+clisp
+  (cond ((member :win32 *features*)
+         :windows)
+        ((equal 0 (ext:run-shell-command "uname | grep -i darwin" :output nil))
+         :darwin)
+        ((equal 0 (ext:run-shell-command "uname | grep -i linux" :output nil))
+         :linux)
+        (t
+         :unknown)))
+
+(defparameter *platform* (platform))
+
+(defparameter *file-separator-char*
+  (if (eq *platform* :windows) #\\ #\/))
+
+(defparameter *file-separator*
+  (make-string 1 :initial-element *file-separator-char*))
+
+
+
+(defun replace-all (string part replacement &key (test #'char=))
+  "Returns a new string in which all the occurences of the part 
+is replaced with replacement."
+  (with-output-to-string (out)
+    (loop with part-length = (length part)
+       for old-pos = 0 then (+ pos part-length)
+       for pos = (search part string
+                         :start2 old-pos
+                         :test test)
+       do (write-string string out
+                        :start old-pos
+                        :end (or pos (length string)))
+       when pos do (write-string replacement out)
+       while pos))) 
+
+(defun message (str)
+  (format *error-output* (concatenate 'string (replace-all str "~" "~~") "~%")))
 
 (defun printable-string (string)
   "Strip newline character from file names, like 'Icon\n'"
@@ -46,8 +103,12 @@
 
 (defun file-short-name (file)
   "Base file/directory name"
-  (pathname-name (parse-namestring file)))
-
+  (let* ((path (string-right-trim *file-separator* file)) ; cut the last "/" from path
+         (last-slash-pos (search *file-separator* path :from-end t))) ; last "/" position
+    (if last-slash-pos                                   ; path has slashes
+        (subseq path (1+ last-slash-pos))                ; cut from the slash position
+        path)))                                          ; just a path otherwise
+        
 (defun newline () )
 (defun beginning-of-line () )
 
@@ -67,13 +128,19 @@ Used since car-safe returns nil for atoms"
 ;; (let ((start (point)))
 ;;   (insert text)
 ;;   (put-text-property start (point) 'face face)))
-  
+
 (defun file-directory-p (filename)
   "Returns t if `filename' exists and is a directory, nil otherwise"
-  (let ((p (probe-file filename)))
-    (if p
-        (not (pathname-name p))
-        (error 'not-exists (format t "File ~a not exists" filename)))))
+  (let ((dir-exists (directory-exists-p filename))
+        (file-exists (file-exists-p filename)))
+    (when (and (not dir-exists) (not file-exists))
+      (error 'not-exists (format t "File ~a not exists" filename)))
+    (if dir-exists t nil)))
+        
+(defun directory-files (dirname)
+  (mapcar 'namestring (list-directory dirname)))
 
+(defmacro concat (str &rest others)
+  `(concatenate 'string ,str ,@others))
 
 ;;; util.cl ends here

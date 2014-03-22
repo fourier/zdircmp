@@ -23,9 +23,18 @@
 
 ;;; Code:
 (defpackage :ztree.diff.model
-  (:use :common-lisp :ztree.util)
-  (:export :update-wait-message   
-           ))
+  (:use :common-lisp :ztree.util :cl-fad)
+  (:export :update-wait-message
+           :create-root-node
+           :diff-node
+           :diff-node-short-name-wrapper
+           :diff-node-to-string
+           :diff-node-is-directory
+           :diff-node-side
+           :diff-node-equal
+           :diff-node-partial-rescan
+           :diff-node-update-all-parents-diff
+           :diff-node-update))
 
 (in-package :ztree.diff.model)
 
@@ -36,8 +45,8 @@
 
 (defun update-wait-message ()
   (when wait-message
-    (setq wait-message (concatenate 'string wait-message "."))))
-    ;;(message wait-message)))
+    (setq wait-message (concat wait-message "."))
+    (message wait-message)))
 
 
 
@@ -49,7 +58,7 @@
 ;; short-name - is the file or directory name
 ;; children - list of nodes - files or directories if the node is a directory
 ;; different = {nil, 'new, 'diff} - means comparison status
-;(defrecord diff-node (parent left-path right-path short-name right-short-name children different))
+                                        ;(defrecord diff-node (parent left-path right-path short-name right-short-name children different))
 (defstruct diff-node parent left-path right-path short-name right-short-name children different)
 
 
@@ -59,12 +68,12 @@
                                                 ((eq x 'new) "new")
                                                 ((eq x 'diff) "different")
                                                 (t (diff-node-short-name x)))
-                                        "(empty)")))
+                                          "(empty)")))
          (children (diff-node-children node))
          (ch-str ""))
     (dolist (x children)
-      (setq ch-str (concatenate 'string ch-str "\n   * " (diff-node-short-name x))))
-    (concatenate 'string "Node: " (diff-node-short-name node)
+      (setq ch-str (concat ch-str "\n   * " (diff-node-short-name x))))
+    (concat "Node: " (diff-node-short-name node)
             "\n"
             ;; " * Parent: " (let ((parent (diff-node-parent node)))
             ;;                 (if parent (diff-node-short-name parent) "nil"))
@@ -76,12 +85,12 @@
             "\n"
             " * Children: " ch-str
             "\n")))
-                          
+
 
 (defun diff-node-short-name-wrapper (node &optional right-side)
   (if (not right-side)
       (diff-node-short-name node)
-    (diff-node-right-short-name node)))
+      (diff-node-right-short-name node)))
 
 
 (defun diff-node-is-directory (node)
@@ -89,13 +98,13 @@
         (right (diff-node-right-path node)))
     (if left
         (file-directory-p left)
-      (file-directory-p right))))
+        (file-directory-p right))))
 
 (defun diff-node-side (node)
   (let ((left (diff-node-left-path node))
         (right (diff-node-right-path node)))
     (if (and left right) 'both
-      (if left 'left 'right))))
+        (if left 'left 'right))))
 
 (defun diff-node-equal (node1 node2)
   (and (string-equal (diff-node-short-name node1)
@@ -107,13 +116,12 @@
 
 (defun files-equal (file1 file2)
   "Compare files using external diff. Returns t if equal"
-  (asdf/run-program:run-program (list "diff" "-q" file1 file2 :ignore-error-status t :output :lines)))
+  (let ((f1 (namestring (file-exists-p file1)))
+        (f2 (namestring (file-exists-p file2))))
+    (not (asdf/run-program:run-program (list "diff" "-q" f1 f2) :ignore-error-status t :output :lines))))
 
-(defun directory-files (dir)
-  "Returns the list of full paths of files in a directory"
-  (mapcar 'namestring (directory (concatenate 'string dir "/*.*"))))
 
-(defun partial-rescan (node)
+(defun diff-node-partial-rescan (node)
   ;; assuming what parent is always exists
   ;; otherwise the UI shall force the full rescan
   (let ((isdir (diff-node-is-directory node))
@@ -121,20 +129,20 @@
         (right (diff-node-right-path node)))
     ;; if node is a directory - traverse
     (when (and left right
-               (probe-file left)
-               (probe-file right))
+               (file-exists-p left)
+               (file-exists-p right))
       (if isdir 
-        (let ((traverse (diff-node-traverse
-                         node
-                         left
-                         right)))
-          (setf (diff-node-different node) (car traverse))
-          (setf (diff-node-children node) (cdr traverse)))
-        ;; node is a file
-        (setf (diff-node-different node)
-         (if (files-equal left right)
-             nil
-           'diff))))))
+          (let ((traverse (diff-node-traverse
+                           node
+                           left
+                           right)))
+            (setf (diff-node-different node) (car traverse))
+            (setf (diff-node-children node) (cdr traverse)))
+          ;; node is a file
+          (setf (diff-node-different node)
+                (if (files-equal left right)
+                    nil
+                    'diff))))))
 
 (defun subtree (parent path side)
   "Creates a subtree for the given path for either 'left or 'right sides"
@@ -153,15 +161,15 @@
                  (children (subtree node file side)))
             (setf (diff-node-children node) children)
             (push node result))
-        (push (make-diff-node
-               :parent parent
-               :left-path (when (eq side 'left) file)
-               :right-path (when (eq side 'right) file)
-               :short-name (file-short-name file)
-               :right-short-name (file-short-name file)
-               :children nil
-               :different 'new)
-              result)))
+          (push (make-diff-node
+                 :parent parent
+                 :left-path (when (eq side 'left) file)
+                 :right-path (when (eq side 'right) file)
+                 :short-name (file-short-name file)
+                 :right-short-name (file-short-name file)
+                 :children nil
+                 :different 'new)
+                result)))
     result))
 
 (defun diff-node-update-diff-from-children (node)
@@ -177,7 +185,7 @@
 (defun diff-node-update-all-parents-diff (node)
   (let ((parent node))
     (loop while (setq parent (diff-node-parent parent)) do
-      (diff-node-update-diff-from-children parent))))
+         (diff-node-update-diff-from-children parent))))
 
 
 (defun update-diff (old new)
@@ -185,8 +193,9 @@
       (if (or (not old)
               (eq old 'new))
           new
-        old)
-    old))
+          old)
+      old))
+
 
 (defun diff-node-traverse (parent path1 path2)
   "Function traversing 2 paths returning the list where the
@@ -217,10 +226,10 @@ the rest is the combined list of nodes"
                     :different nil))
              ;; 1. find if the file is in the second directory and the type
              ;;    is the same - i.e. both are directories or both are files
-             (file2 (remove-if list2
-                               #'(lambda (x) (and (string-equal (file-short-name x)
-                                                                 simple-name)
-                                                   (eq isdir (file-directory-p x)))))))
+             (file2 (find-if #'(lambda (x) (and (string-equal (file-short-name x)
+                                                              simple-name)
+                                                (eq isdir (file-directory-p x))))
+                             list2)))
         ;; 2. if it is not in the second directory, add it as a node
         (if (not file2)
             (progn
@@ -229,19 +238,20 @@ the rest is the combined list of nodes"
                 (setq children (subtree node file1 'left)))
               ;; 2.2 update the difference status for this entry
               (setq different 'new))
-          ;; 3. if it is found in second directory and of the same type
-          ;; 3.1 if it is a file
-          (if (not (file-directory-p file1))
-              ;; 3.1.1 set difference status to this entry
-              (setq different (if (files-equal file1 file2) nil 'diff))
-            ;; 3.2 if it is the directory
-            ;; 3.2.1 get the result of the directories comparison together with status
-            (let ((traverse (diff-node-traverse node file1 file2)))
-              ;; 3.2.2 update the difference status for whole comparison from
-              ;;       difference result from the 2 subdirectories comparison
-              (setq different (car traverse))
-              ;; 3.2.3 set the children list from the 2 subdirectories comparison
-              (setq children (cdr traverse)))))
+            ;; 3. if it is found in second directory and of the same type
+            ;; 3.1 if it is a file
+            (if (not (file-directory-p file1))
+                (progn 
+                  ;; 3.1.1 set difference status to this entry
+                  (setq different (if (files-equal file1 file2) nil 'diff)))
+                ;; 3.2 if it is the directory
+                ;; 3.2.1 get the result of the directories comparison together with status
+                (let ((traverse (diff-node-traverse node file1 file2)))
+                  ;; 3.2.2 update the difference status for whole comparison from
+                  ;;       difference result from the 2 subdirectories comparison
+                  (setq different (car traverse))
+                  ;; 3.2.3 set the children list from the 2 subdirectories comparison
+                  (setq children (cdr traverse)))))
         ;; 2.3 update difference status for the whole comparison
         (setq different-dir (update-diff different-dir different))
         ;; update calculated parameters of the node
@@ -269,15 +279,15 @@ the rest is the combined list of nodes"
                     :different 'new))
              ;; 1. find if the file is in the first directory and the type
              ;;    is the same - i.e. both are directories or both are files
-             (file1 (remove-if list1
-                                #'(lambda (x) (and (string-equal (file-short-name x)
-                                                                 simple-name)
-                                                   (eq isdir (file-directory-p x)))))))
+             (file1 (find-if #'(lambda (x) (and (string-equal (file-short-name x)
+                                                              simple-name)
+                                                (eq isdir (file-directory-p x))))
+                             list1)))
         ;; if it is not in the first directory, add it as a node
         (when (not file1)
           ;; if it is a directory, set the whole subtree to children
           (when (file-directory-p file2)
-            (setq children (subtree node file2 'right)))
+            (setq children nil));(subtree node file2 'right)))
           ;; update the different status for the whole comparison
           (setq different-dir (update-diff different-dir 'new))
           ;; set calculated children to the node
@@ -287,12 +297,12 @@ the rest is the combined list of nodes"
     ;; result is a pair: difference status and nodes list
     (cons different-dir result)))
 
-(defun create (dir1 dir2)
+(defun create-root-node (dir1 dir2)
   (when (not (file-directory-p dir1))
     (error (format nil "Path ~a is not a directory" dir1)))
   (when (not (file-directory-p dir2))
     (error (format nil "Path ~a is not a directory" dir2)))
-  (setq wait-message (concatenate 'string "Comparing " dir1 " and " dir2 " ..."))
+  (setq wait-message (concat "Comparing " dir1 " and " dir2 " ..."))
   (let* ((model 
           (make-diff-node
            :parent nil
@@ -303,23 +313,20 @@ the rest is the combined list of nodes"
            :children nil
            :different nil))
          (traverse (diff-node-traverse model dir1 dir2)))
-    (setf (diff-node-children model) (cdr traverse))
     (setf (diff-node-different model) (car traverse))
-    ;;(message "Done.")
+    (setf (diff-node-children model) (cdr traverse))
+    (message "Done.")
     model))
 
-(defun update-node (node)
+(defun diff-node-update (node)
   (setq wait-message
-        (concatenate 'string "Updating " (diff-node-short-name node) " ..."))
+        (concat "Updating " (diff-node-short-name node) " ..."))
   (let ((traverse (diff-node-traverse node
-                                            (diff-node-left-path node)
-                                            (diff-node-right-path node))))
+                                      (diff-node-left-path node)
+                                      (diff-node-right-path node))))
     (setf (diff-node-children node) (cdr traverse))
-    (setf (diff-node-different node) (car traverse))))
-    ;;(message "Done.")))
-    
+    (setf (diff-node-different node) (car traverse)))
+  (message "Done."))
 
-
-(provide 'ztree-diff-model)
-
-;;; ztree-diff-model.el ends here
+;;(ztree.diff.model::create-root-node "~/difftest/diff1" "~/difftest/diff2")
+;;; diff-model.el ends here
