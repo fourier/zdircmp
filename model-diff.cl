@@ -1,4 +1,4 @@
-;;; diff-model.el --- diff model for directory trees
+;;; model-diff.cl --- diff model for directory trees
 
 ;; Copyright (C) 2014 Alexey Veretennikov
 ;;
@@ -329,4 +329,4 @@ the rest is the combined list of nodes"
   (message "Done."))
 
 ;;(ztree.diff.model::create-root-node "~/difftest/diff1" "~/difftest/diff2")
-;;; diff-model.el ends here
+;;; model-diff.cl ends here

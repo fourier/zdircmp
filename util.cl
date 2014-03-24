@@ -26,8 +26,7 @@
 (defpackage :ztree.util
   (:use :common-lisp)
   (:use :common-lisp :cl-fad)
-  (:export :message
-           :printable-string   
+  (:export :printable-string   
            :file-short-name
            :newline
            :beginning-of-line
@@ -93,9 +92,6 @@ is replaced with replacement."
                         :end (or pos (length string)))
        when pos do (write-string replacement out)
        while pos))) 
-
-(defun message (str)
-  (format *error-output* (concatenate 'string (replace-all str "~" "~~") "~%")))
 
 (defun printable-string (string)
   "Strip newline character from file names, like 'Icon\n'"
