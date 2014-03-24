@@ -62,6 +62,13 @@ Params: `win' is a window name,
        (progn
          (delwin ,win)))))
 
+(defun process-resize ()
+  (let ((maxcols 0)
+        (maxrows 0))
+    (getmaxyx *stdscr* maxrows maxcols)
+    (ztree.view.message:resize-view 0 (1- maxrows) maxcols 1)
+    (ztree.view.main:resize-view 0 0 maxcols (1- maxrows))))
+
 
 (defun handle-key (key)
   ;; handle F1-F12 in main app
@@ -89,6 +96,9 @@ Params: `win' is a window name,
          (message "F11"))
         ((eq key +KEY-F12+) 
          (message "F12"))
+        ;; handle resize event
+        ((eq key -1)
+         (process-resize))
         ;; process others in main view
         (t (ztree.view.main:process-key key))))
 

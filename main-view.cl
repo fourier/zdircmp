@@ -44,13 +44,6 @@
 (defvar *main-window* nil
   "Main ncurses window")
 
-(defun create-view (x y width height)
-  (destroy-view)
-  (setf *main-window* (newwin height width y x))
-  (box *main-window* 0 0)
-  (wrefresh *main-window*))
-
-
 (defun destroy-view ()
   (when *main-window*
     (wborder *main-window* 32 32 32 32 32 32 32 32)
@@ -58,12 +51,24 @@
     (delwin *main-window*)
     (setf *main-window* nil)))
 
+(defun create-view (x y width height)
+  (destroy-view)
+  (setf *main-window* (newwin height width y x))
+  (box *main-window* 0 0)
+  (wrefresh *main-window*))
 
-(defun resize-view (y x width height))
+
 
 (defun refresh-view ()
   (if *main-window*
       (wrefresh *main-window*)))
+
+(defun resize-view (x y width height)
+  (wclear *main-window*)
+  (wresize *main-window* height width)
+  (mvwin *main-window* y x)
+  (box *main-window* 0 0)
+  (refresh-view))
 
 
 (defun process-key (key)

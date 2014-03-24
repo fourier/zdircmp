@@ -40,25 +40,36 @@
 (defvar *message-window* nil
   "1-line window for messages")
 
-(defun create-view (x y width height)
-  (destroy-view)
-  (setf *message-window* (newwin height width y x))
-  (wrefresh *message-window*))
-
+(defvar *last-message* nil
+  "Last message shown in window")
 
 (defun destroy-view ()
   (when *message-window*
     (delwin *message-window*)
     (setf *message-window* nil)))
 
-
-(defun resize-view (y x width height))
+(defun create-view (x y width height)
+  (destroy-view)
+  (setf *message-window* (newwin height width y x))
+  (wrefresh *message-window*))
 
 (defun message (str)
   (when *message-window*
     (wclear *message-window*)
     (mvwprintw *message-window*  0 0 str)
+    (setf *last-message* str)
     (wrefresh *message-window*)))
+
+
+(defun refresh-view ()
+  (message *last-message*))
+
+(defun resize-view (x y width height)
+  (wclear *message-window*)
+  (wresize *message-window* height width)
+  (mvwin *message-window* y x)
+  (refresh-view))
+
 
 
 ;;; message-view.cl ends here
