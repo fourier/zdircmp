@@ -11,6 +11,12 @@
 ;; import message function from ztree.view.message for easy use of messages
 (import 'ztree.view.message::message)
 
+(defconstant +min-screen-width+ 60
+  "Minimum supported screen width")
+
+(defconstant +min-screen-height+ 10
+  "Minimum supported screen height")
+
 (defmacro with-ncurses (&body body)
   "Macro to create a ncurses environment"
   `(unwind-protect
@@ -62,10 +68,24 @@ Params: `win' is a window name,
        (progn
          (delwin ,win)))))
 
+(define-condition on-bad-screen-size (error)
+  ((message :initarg :description :reader description)))
+
+
+(defun assert-screen-sizes-ok (width height)
+  (unless (and (>= width +min-screen-width+)
+               (>= height +min-screen-height+))
+    (signal 'on-bad-screen-size :description
+            (format nil
+                    "Too small window size: ~ax~a, required size ~ax~a"
+                    width height +min-screen-width+ +min-screen-height+))))
+
+
 (defun process-resize ()
   (let ((maxcols 0)
         (maxrows 0))
     (getmaxyx *stdscr* maxrows maxcols)
+    (assert-screen-sizes-ok maxcols maxrows)
     (ztree.view.message:resize-view 0 (1- maxrows) maxcols 1)
     (ztree.view.main:resize-view 0 0 maxcols (1- maxrows))))
 
@@ -102,6 +122,8 @@ Params: `win' is a window name,
         ;; process others in main view
         (t (ztree.view.main:process-key key))))
 
+
+
 (with-ncurses
   ;; no caching of the input
   (cbreak)
@@ -113,13 +135,22 @@ Params: `win' is a window name,
   (noecho)
   ;; hide cursor
   (curs-set 0)
-  ;; create the messages window
-  (ztree.view.message:create-view 0 (1- *lines*) *cols* 1)
-  ;; create the main window
-  (ztree.view.main:create-view 0 0 *cols* (1- *lines*))
-  (let ((key nil))
-    (loop while (not (eq (setf key (getch)) +KEY-ESC+)) do
-         (handle-key key)))
+
+  ;; get the screen dimensions
+  (let ((maxcols 0)
+        (maxrows 0))
+    (getmaxyx *stdscr* maxrows maxcols)
+    (handler-case
+        (progn 
+          (assert-screen-sizes-ok maxcols maxrows)
+          ;; create the messages window
+          (ztree.view.message:create-view 0 (1- *lines*) *cols* 1)
+          ;; create the main window
+          (ztree.view.main:create-view 0 0 *cols* (1- *lines*))
+          (let ((key nil))
+            (loop while (not (eq (setf key (getch)) +KEY-ESC+)) do
+                 (handle-key key))))
+      (on-bad-screen-size (what) (format *error-output* (description what)))))
   (ztree.view.message:destroy-view)
   (ztree.view.main:destroy-view))
 
