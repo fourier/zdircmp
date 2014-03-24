@@ -30,8 +30,17 @@
 
 ;; 3 different alternatives for backspace
 (defun key_backspace_p(ch) (or (eq ch KEY_BACKSPACE0)
-                           (eq ch KEY_BACKSPACE1)
-                           (eq ch KEY_BACKSPACE2)))
+                               (eq ch KEY_BACKSPACE1)
+                               (eq ch KEY_BACKSPACE2)))
+
+(defvar *main-window* nil
+  "Main ncurses window")
+
+(defvar *message-window* nil
+  "1-line window for messages")
+
+(defvar *help-window* nil
+  "Top help window")
 
 (shadowing-import 'timeout)
 (use-package 'cl-ncurses)
@@ -53,8 +62,8 @@
 
 
 
-(defmacro with-ncurses-win (win lines cols y x &body body)
-  "Macro to create and operate with the ncurses-window.
+(defmacro with-ncurses-win (win lines cols y x &body body )
+  "Macro to create and operate with the ncurses-window with border.
 Params: `win' is a window name,
         `lines' number of lines of the window size,
         `cols' number of columns of the window size,
@@ -74,6 +83,74 @@ Params: `win' is a window name,
 ;; (macroexpand-1 '(with-ncurses-win main 20 20 1 2
 ;;                  (wprintw main "test")))
 
+(defmacro with-ncurses-borderless-win (win lines cols y x &body body )
+  "Macro to create and operate with the ncurses-window without border.
+Params: `win' is a window name,
+        `lines' number of lines of the window size,
+        `cols' number of columns of the window size,
+        `y',`x' - upper left-hand corner of the window
+        `body' a list of expressions to perform on `win'"
+  `(let ((,win (newwin ,lines ,cols ,y ,x)))
+     (unwind-protect
+          (progn
+            ,@body)
+       (progn
+         (delwin ,win)))))
+
+
+(defun handle-key (key)
+  (cond ((eq key KEY_UP)
+         (message "UP"))
+        ((eq key KEY_DOWN)
+         (message "DOWN"))
+        ((eq key KEY_LEFT) 
+         (message "LEFT"))
+        ((eq key KEY_RIGHT) 
+         (message "RIGHT"))
+        ((key_backspace_p key)
+         (message "BACKSPACE"))
+        ((eq key KEY_HOME) 
+         (message "HOME"))
+        ((eq key KEY_END) 
+         (message "END"))
+        ((eq key KEY_TAB) 
+         (message "TAB"))
+        ((eq key KEY_NPAGE) 
+         (message "PGDN"))
+        ((eq key KEY_PPAGE) 
+         (message "PGUP"))
+        ((eq key KEY_F1) 
+         (message "F1"))
+        ((eq key KEY_F2) 
+         (message "F2"))
+        ((eq key KEY_F3) 
+         (message "F3"))
+        ((eq key KEY_F4) 
+         (message "F4"))
+        ((eq key KEY_F5) 
+         (message "F5"))
+        ((eq key KEY_F6) 
+         (message "F6"))
+        ((eq key KEY_F7) 
+         (message "F7"))
+        ((eq key KEY_F8) 
+         (message "F8"))
+        ((eq key KEY_F9) 
+         (message "F9"))
+        ((eq key KEY_F10) 
+         (message "F10"))
+        ((eq key KEY_F11) 
+         (message "F11"))
+        ((eq key KEY_F12) 
+         (message "F12"))
+        (t
+         (message (format nil "Pressed: ~a" key))))
+  (wrefresh *main-window*))
+
+(defun message (str)
+  (wclear *message-window*)
+  (mvwprintw *message-window*  0 0 str)
+  (wrefresh *message-window*))
 
 (with-ncurses
   ;; no caching of the input
@@ -84,114 +161,16 @@ Params: `win' is a window name,
   (start-color)
   ;; turn off key echoing
   (noecho)
-  ;; create the main window
-  (with-ncurses-win win *lines* *cols* 0 0
-    (let ((key nil)
-          (x 1)
-          (y 1))
-      (loop while (not (eq (setf key (getch)) KEY_ESC)) do
-           (cond ((eq key KEY_UP) 
-                  (mvwprintw win y x "UP"))
-                 ((eq key KEY_DOWN) 
-                  (mvwprintw win y x "DOWN"))
-                 ((eq key KEY_LEFT) 
-                  (mvwprintw win y x "LEFT"))
-                 ((eq key KEY_RIGHT) 
-                  (mvwprintw win y x "RIGHT"))
-                 ((key_backspace_p key)
-                  (mvwprintw win y x "BACKSPACE"))
-                 ((eq key KEY_HOME) 
-                  (mvwprintw win y x "HOME"))
-                 ((eq key KEY_END) 
-                  (mvwprintw win y x "END"))
-                 ((eq key KEY_TAB) 
-                  (mvwprintw win y x "TAB"))
-                 ((eq key KEY_NPAGE) 
-                  (mvwprintw win y x "PGDN"))
-                 ((eq key KEY_PPAGE) 
-                  (mvwprintw win y x "PGUP"))
-                 ((eq key KEY_F1) 
-                  (mvwprintw win y x "F1"))
-                 ((eq key KEY_F2) 
-                  (mvwprintw win y x "F2"))
-                 ((eq key KEY_F3) 
-                  (mvwprintw win y x "F3"))
-                 ((eq key KEY_F4) 
-                  (mvwprintw win y x "F4"))
-                 ((eq key KEY_F5) 
-                  (mvwprintw win y x "F5"))
-                 ((eq key KEY_F6) 
-                  (mvwprintw win y x "F6"))
-                 ((eq key KEY_F7) 
-                  (mvwprintw win y x "F7"))
-                 ((eq key KEY_F8) 
-                  (mvwprintw win y x "F8"))
-                 ((eq key KEY_F9) 
-                  (mvwprintw win y x "F9"))
-                 ((eq key KEY_F10) 
-                  (mvwprintw win y x "F10"))
-                 ((eq key KEY_F11) 
-                  (mvwprintw win y x "F11"))
-                 ((eq key KEY_F12) 
-                  (mvwprintw win y x "F12"))
-                 (t
-                  (mvwprintw win y x (format nil "Pressed: ~a" key))))
-               (wrefresh win)))))
+  ;; hide cursor
+  (curs-set 0)
+  ;; create the messages window
+  (with-ncurses-borderless-win messages-win 1 *cols* (1- *lines*) 0
+    (setf *message-window* messages-win)
+    ;; create the main window
+    (with-ncurses-win win (1- *lines*) *cols* 0 0
+        (setf *main-window* win)
+      (let ((key nil))
+        (loop while (not (eq (setf key (getch)) KEY_ESC)) do
+             (handle-key key))))))
 
-
-(when nil
-  (printw "Hello, cl-ncurses")
-  (mvprintw 1 1 (format nil "Number of rows:    ~a" *lines*))
-  (mvprintw 2 1 (format nil "Number of columns: ~a" *cols*))
-  (refresh)
-  (let ((key nil))
-    (loop while (not (eq (setf key (getch)) KEY_ESC)) do
-         (cond ((eq key KEY_UP) 
-                (mvprintw 3 0 "UP"))
-               ((eq key KEY_DOWN) 
-                (mvprintw 3 0 "DOWN"))
-               ((eq key KEY_LEFT) 
-                (mvprintw 3 0 "LEFT"))
-               ((eq key KEY_RIGHT) 
-                (mvprintw 3 0 "RIGHT"))
-               ((key_backspace_p key)
-                (mvprintw 3 0 "BACKSPACE"))
-               ((eq key KEY_HOME) 
-                (mvprintw 3 0 "HOME"))
-               ((eq key KEY_END) 
-                (mvprintw 3 0 "END"))
-               ((eq key KEY_TAB) 
-                (mvprintw 3 0 "TAB"))
-               ((eq key KEY_NPAGE) 
-                (mvprintw 3 0 "PGDN"))
-               ((eq key KEY_PPAGE) 
-                (mvprintw 3 0 "PGUP"))
-               ((eq key KEY_F1) 
-                (mvprintw 3 0 "F1"))
-               ((eq key KEY_F2) 
-                (mvprintw 3 0 "F2"))
-               ((eq key KEY_F3) 
-                (mvprintw 3 0 "F3"))
-               ((eq key KEY_F4) 
-                (mvprintw 3 0 "F4"))
-               ((eq key KEY_F5) 
-                (mvprintw 3 0 "F5"))
-               ((eq key KEY_F6) 
-                (mvprintw 3 0 "F6"))
-               ((eq key KEY_F7) 
-                (mvprintw 3 0 "F7"))
-               ((eq key KEY_F8) 
-                (mvprintw 3 0 "F8"))
-               ((eq key KEY_F9) 
-                (mvprintw 3 0 "F9"))
-               ((eq key KEY_F10) 
-                (mvprintw 3 0 "F10"))
-               ((eq key KEY_F11) 
-                (mvprintw 3 0 "F11"))
-               ((eq key KEY_F12) 
-                (mvprintw 3 0 "F12"))
-               (t
-                (mvprintw 3 0 (format nil "Pressed: ~a" key))))))
-  (endwin)
-  )
 (quit)
