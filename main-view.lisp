@@ -23,51 +23,57 @@
 
 ;;; Code:
 (defpackage :ztree.view.main
-  (:use ::common-lisp :ztree.util :ztree.diff.model :ztree.constants)
+  (:use ::common-lisp :cl-ncurses :ztree.util :ztree.model.node :ztree.constants)
+  ;; import message function from ztree.view.message for easy use of messages
+  (:import-from :ztree.view.message :message)
   (:export :create-view
            :destroy-view
            :resize-view
            :process-key
            :refresh-view))
 
-(require 'cl-ncurses)
-
 (in-package :ztree.view.main)
 
 (shadowing-import 'timeout)
-(use-package 'cl-ncurses)
 
-;; import message function from ztree.view.message for easy use of messages
-(import 'ztree.view.message::message)
+(defstruct ncurses-wrapper window x y width height)
 
 
-(defvar *main-window* nil
+(defvar *main-window* (make-ncurses-wrapper)
   "Main ncurses window")
 
 (defun destroy-view ()
-  (when *main-window*
-    (wborder *main-window* 32 32 32 32 32 32 32 32)
-    (wrefresh *main-window*)
-    (delwin *main-window*)
-    (setf *main-window* nil)))
+  (when (ncurses-wrapper-window *main-window*)
+    (wborder (ncurses-wrapper-window *main-window*) 32 32 32 32 32 32 32 32)
+    (wrefresh (ncurses-wrapper-window *main-window*))
+    (delwin (ncurses-wrapper-window *main-window*))
+    (setf (ncurses-wrapper-window *main-window*) nil)))
 
 (defun create-view (x y width height)
   (destroy-view)
-  (setf *main-window* (newwin height width y x))
-  (box *main-window* 0 0)
-  (wrefresh *main-window*))
+  (setf (ncurses-wrapper-window *main-window*) (newwin height width y x))
+  (setf (ncurses-wrapper-x *main-window*) x)
+  (setf (ncurses-wrapper-y *main-window*) y)
+  (setf (ncurses-wrapper-width *main-window*) width)
+  (setf (ncurses-wrapper-height *main-window*) height)
+  (box (ncurses-wrapper-window *main-window*) 0 0)
+  (wrefresh (ncurses-wrapper-window *main-window*)))
 
 
 
 (defun refresh-view ()
-  (if *main-window*
-      (wrefresh *main-window*)))
+  (if (ncurses-wrapper-window *main-window*)
+      (wrefresh (ncurses-wrapper-window *main-window*))))
 
 (defun resize-view (x y width height)
-  (wclear *main-window*)
-  (wresize *main-window* height width)
-  (mvwin *main-window* y x)
-  (box *main-window* 0 0)
+  (wclear (ncurses-wrapper-window *main-window*))
+  (wresize (ncurses-wrapper-window *main-window*) height width)
+  (mvwin (ncurses-wrapper-window *main-window*) y x)
+  (setf (ncurses-wrapper-x *main-window*) x)
+  (setf (ncurses-wrapper-y *main-window*) y)
+  (setf (ncurses-wrapper-width *main-window*) width)
+  (setf (ncurses-wrapper-height *main-window*) height)
+  (box (ncurses-wrapper-window *main-window*) 0 0)
   (refresh-view))
 
 

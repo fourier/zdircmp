@@ -1,4 +1,4 @@
-;;; message-view.cl --- message TUI view (window) for directory trees
+;;; help-view.cl --- Help text view (window) for directory trees
 
 ;; Copyright (C) 2014 Alexey Veretennikov
 ;;
@@ -19,57 +19,43 @@
 ;;
 ;;; Commentary:
 
-;; Message View
+;; Help View
 
 ;;; Code:
-(defpackage :ztree.view.message
-  (:use ::common-lisp)
+(defpackage :ztree.view.help
+  (:use ::common-lisp :cl-ncurses)
   (:export :create-view
            :destroy-view
-           :resize-view
-           :message))
+           :resize-view))
 
-(require 'cl-ncurses)
 
-(in-package :ztree.view.message)
+(in-package :ztree.view.help)
 
 (shadowing-import 'timeout)
 (use-package 'cl-ncurses)
 
 
-(defvar *message-window* nil
-  "1-line window for messages")
-
-(defvar *last-message* nil
-  "Last message shown in window")
+(defvar *help-window* nil
+  "Help window")
 
 (defun destroy-view ()
-  (when *message-window*
-    (delwin *message-window*)
-    (setf *message-window* nil)))
+  (when *help-window*
+    (delwin *help-window*)
+    (setf *help-window* nil)))
 
 (defun create-view (x y width height)
   (destroy-view)
-  (setf *message-window* (newwin height width y x))
-  (wrefresh *message-window*))
+  (setf *help-window* (newwin height width y x))
+  (wrefresh *help-window*))
 
-(defun message (str)
-  (when *message-window*
-    (wclear *message-window*)
-    (mvwprintw *message-window*  0 0 str)
-    (setf *last-message* str)
-    (wrefresh *message-window*)))
-
-
-(defun refresh-view ()
-  (message *last-message*))
+(defun refresh-view ())
 
 (defun resize-view (x y width height)
-  (wclear *message-window*)
-  (wresize *message-window* height width)
-  (mvwin *message-window* y x)
+  (wclear *help-window*)
+  (wresize *help-window* height width)
+  (mvwin *help-window* y x)
   (refresh-view))
 
 
 
-;;; message-view.cl ends here
+;;; help-view.cl ends here

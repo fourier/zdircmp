@@ -1,4 +1,4 @@
-;;; model-diff.cl --- diff model for directory trees
+;;; model-node.cl --- diff model for directory trees
 
 ;; Copyright (C) 2014 Alexey Veretennikov
 ;;
@@ -19,11 +19,13 @@
 ;;
 ;;; Commentary:
 
-;; Diff model
+;; Diff model node
 
 ;;; Code:
-(defpackage :ztree.diff.model
+(defpackage :ztree.model.node
   (:use :common-lisp :ztree.util :cl-fad)
+  ;; import message function from ztree.view.message for easy use of messages
+  (:import-from :ztree.view.message :message)
   (:export :update-wait-message
            :create-root-node
            :diff-node
@@ -36,7 +38,9 @@
            :diff-node-update-all-parents-diff
            :diff-node-update))
 
-(in-package :ztree.diff.model)
+
+(in-package :ztree.model.node)
+
 
 (defvar wait-message nil
   "Message showing while constructing the diff tree")
@@ -328,5 +332,5 @@ the rest is the combined list of nodes"
     (setf (diff-node-different node) (car traverse)))
   (message "Done."))
 
-;;(ztree.diff.model::create-root-node "~/difftest/diff1" "~/difftest/diff2")
-;;; model-diff.cl ends here
+;;(ztree.model.node::create-root-node "~/difftest/diff1" "~/difftest/diff2")
+;;; model-node.cl ends here

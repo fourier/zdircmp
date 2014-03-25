@@ -1,12 +1,38 @@
-(require 'cl-ncurses)
+;;; tui.cl --- Entry point to the user interface
 
+;; Copyright (C) 2014 Alexey Veretennikov
+;;
+;; Author: Alexey Veretennikov <alexey dot veretennikov at gmail dot com>
+;;
+;; This program is free software; you can redistribute it and/or
+;; modify it under the terms of the GNU General Public License
+;; as published by the Free Software Foundation; either version 2
+;; of the License, or (at your option) any later version.
+;;
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+;;
+;;; Commentary:
+
+;; Text User Interface
+
+;;; Code:
+(defpackage :ztree.tui
+  (:use ::common-lisp :cl-ncurses :ztree.constants )
+  ;; import message function from ztree.view.message for easy use of messages
+  (:import-from :ztree.view.message :message)
+  (:export :start-tui))
+
+(in-package :ztree.tui)
+
+;; resolving conflict - the sb-ext already has the timeout function,
+;; so shadowing importing one from the cl-ncurses package
 (shadowing-import 'timeout)
-(use-package 'cl-ncurses)
-
-(use-package :ztree.constants)
-
-;; import message function from ztree.view.message for easy use of messages
-(import 'ztree.view.message::message)
 
 (defconstant +min-screen-width+ 60
   "Minimum supported screen width")
@@ -144,48 +170,62 @@ Params: `win' is a window name,
         ;; process others in main view
         (t (ztree.view.main:process-key key))))
 
+(defun command-line ()
+  (or 
+   #+SBCL sb-ext:*posix-argv*  
+   #+LISPWORKS system:*line-arguments-list*
+   #+CMU extensions:*command-line-words*
+   nil))
+
+(defun usage (appname)
+  (format *error-output* (concatenate 'string "Usage: " appname " path1 path2~%"))
+  (format *error-output* "where path1 and path2 - paths to directories to compare~%")
+  (sb-ext:quit))
+
+(defun start-tui ()
+  (let ((cmdargs (command-line)))
+    (if (< (length cmdargs) 3)
+        (usage (car cmdargs))
+        (with-ncurses
+          ;; no caching of the input
+          (cbreak)
+          ;; turn on special keys 
+          (keypad *stdscr* 1)
+          ;; turn on color 
+          (start-color)
+          ;; turn off key echoing
+          (noecho)
+          ;; hide cursor
+          (curs-set 0)
+
+          ;; get the screen dimensions
+          (let ((maxcols 0)
+                (maxrows 0))
+            (getmaxyx *stdscr* maxrows maxcols)
+            (handler-case
+                (progn
+                  ;; verify the screen size
+                  (assert-screen-sizes-ok maxcols maxrows)
+                  ;; create the messages window
+                  (ztree.view.message:create-view 0 (1- *lines*) *cols* 1)
+                  ;; create a help window if necessary
+                  (let ((main-view-height (1- *lines*))
+                        (main-view-y 0))
+                    (when *help-window-visible*
+                      (ztree.view.help:create-view 0 0 *cols* +help-window-height+)
+                      (setf main-view-height (- main-view-height +help-window-height+))
+                      (setf main-view-y (+ main-view-y +help-window-height+)))
+                    ;; create the main window
+                    (ztree.view.main:create-view 0 main-view-y *cols* main-view-height))
+                  ;; keyboard input loop with ESC as an exit condition
+                  (let ((key nil))
+                    (loop while (not (eq (setf key (getch)) +KEY-ESC+)) do
+                         (handle-key key))))
+              ;; error handling: wrong screen size
+              (on-bad-screen-size (what) (format *error-output* (description what)))))
+          ;; destroy windows
+          (ztree.view.help:destroy-view)
+          (ztree.view.message:destroy-view)
+          (ztree.view.main:destroy-view)))))
 
 
-(with-ncurses
-  ;; no caching of the input
-  (cbreak)
-  ;; turn on special keys 
-  (keypad *stdscr* 1)
-  ;; turn on color 
-  (start-color)
-  ;; turn off key echoing
-  (noecho)
-  ;; hide cursor
-  (curs-set 0)
-
-  ;; get the screen dimensions
-  (let ((maxcols 0)
-        (maxrows 0))
-    (getmaxyx *stdscr* maxrows maxcols)
-    (handler-case
-        (progn
-          ;; verify the screen size
-          (assert-screen-sizes-ok maxcols maxrows)
-          ;; create the messages window
-          (ztree.view.message:create-view 0 (1- *lines*) *cols* 1)
-          ;; create a help window if necessary
-          (let ((main-view-height (1- *lines*))
-                (main-view-y 0))
-            (when *help-window-visible*
-              (ztree.view.help:create-view 0 0 *cols* +help-window-height+)
-              (setf main-view-height (- main-view-height +help-window-height+))
-              (setf main-view-y (+ main-view-y +help-window-height+)))
-          ;; create the main window
-            (ztree.view.main:create-view 0 main-view-y *cols* main-view-height))
-          ;; keyboard input loop with ESC as an exit condition
-          (let ((key nil))
-            (loop while (not (eq (setf key (getch)) +KEY-ESC+)) do
-                 (handle-key key))))
-      ;; error handling: wrong screen size
-      (on-bad-screen-size (what) (format *error-output* (description what)))))
-  ;; destroy windows
-  (ztree.view.help:destroy-view)
-  (ztree.view.message:destroy-view)
-  (ztree.view.main:destroy-view))
-
-(quit)
