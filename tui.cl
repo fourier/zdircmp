@@ -1,8 +1,5 @@
 (require 'cl-ncurses)
 
-(defvar *help-window* nil
-  "Top help window")
-
 (shadowing-import 'timeout)
 (use-package 'cl-ncurses)
 
@@ -14,8 +11,13 @@
 (defconstant +min-screen-width+ 60
   "Minimum supported screen width")
 
-(defconstant +min-screen-height+ 10
+(defconstant +min-screen-height+ 15
   "Minimum supported screen height")
+
+(defconstant +help-window-height+ 5
+  "Height of the help window")
+
+(defvar *help-window-visible* t)
 
 (defmacro with-ncurses (&body body)
   "Macro to create a ncurses environment"
@@ -87,13 +89,33 @@ Params: `win' is a window name,
     (getmaxyx *stdscr* maxrows maxcols)
     (assert-screen-sizes-ok maxcols maxrows)
     (ztree.view.message:resize-view 0 (1- maxrows) maxcols 1)
-    (ztree.view.main:resize-view 0 0 maxcols (1- maxrows))))
+    (let ((main-view-height (1- maxrows))
+          (main-view-y 0))
+      (when *help-window-visible*
+        (ztree.view.help:resize-view 0 0 maxcols +help-window-height+)
+        (setf main-view-height (- main-view-height +help-window-height+))
+        (setf main-view-y (+ main-view-y +help-window-height+)))
+      ;; create the main window
+      (ztree.view.main:resize-view 0 main-view-y maxcols main-view-height))))
+
+
+(defun toggle-help-view ()
+  (setf *help-window-visible* (not *help-window-visible*))
+  (if *help-window-visible*
+      (let ((maxcols 0)
+            (maxrows 0))
+        (getmaxyx *stdscr* maxrows maxcols)
+        (ztree.view.help:create-view 0 0 maxcols +help-window-height+))
+    (ztree.view.help:destroy-view))
+  (process-resize)
+  (message (format nil "~a help window"
+                   (if *help-window-visible* "Showing" "Hiding"))))
 
 
 (defun handle-key (key)
   ;; handle F1-F12 in main app
-  (cond ((eq key +KEY-F1+) 
-         (message "F1"))
+  (cond ((eq key +KEY-F1+)
+         (toggle-help-view))
         ((eq key +KEY-F2+) 
          (message "F2"))
         ((eq key +KEY-F3+) 
@@ -141,16 +163,28 @@ Params: `win' is a window name,
         (maxrows 0))
     (getmaxyx *stdscr* maxrows maxcols)
     (handler-case
-        (progn 
+        (progn
+          ;; verify the screen size
           (assert-screen-sizes-ok maxcols maxrows)
           ;; create the messages window
           (ztree.view.message:create-view 0 (1- *lines*) *cols* 1)
+          ;; create a help window if necessary
+          (let ((main-view-height (1- *lines*))
+                (main-view-y 0))
+            (when *help-window-visible*
+              (ztree.view.help:create-view 0 0 *cols* +help-window-height+)
+              (setf main-view-height (- main-view-height +help-window-height+))
+              (setf main-view-y (+ main-view-y +help-window-height+)))
           ;; create the main window
-          (ztree.view.main:create-view 0 0 *cols* (1- *lines*))
+            (ztree.view.main:create-view 0 main-view-y *cols* main-view-height))
+          ;; keyboard input loop with ESC as an exit condition
           (let ((key nil))
             (loop while (not (eq (setf key (getch)) +KEY-ESC+)) do
                  (handle-key key))))
+      ;; error handling: wrong screen size
       (on-bad-screen-size (what) (format *error-output* (description what)))))
+  ;; destroy windows
+  (ztree.view.help:destroy-view)
   (ztree.view.message:destroy-view)
   (ztree.view.main:destroy-view))
 
