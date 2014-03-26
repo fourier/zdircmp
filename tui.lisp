@@ -99,6 +99,8 @@ Params: `win' is a window name,
 (define-condition on-bad-screen-size (error)
   ((message :initarg :description :reader description)))
 
+(define-condition on-exit-command (error)
+  ((text :initarg :text :reader text)))
 
 (defun assert-screen-sizes-ok (width height)
   (unless (and (>= width +min-screen-width+)
@@ -140,7 +142,9 @@ Params: `win' is a window name,
 
 (defun handle-key (key)
   ;; handle F1-F12 in main app
-  (cond ((eq key +KEY-F1+)
+  (cond ((eq key +KEY-ESC+)
+         (signal 'on-exit-command :text "exit"))
+        ((eq key +KEY-F1+)
          (toggle-help-view))
         ((eq key +KEY-F2+) 
          (message "F2"))
@@ -217,15 +221,19 @@ Params: `win' is a window name,
                       (setf main-view-y (+ main-view-y +help-window-height+)))
                     ;; create the main window
                     (ztree.view.main:create-view 0 main-view-y *cols* main-view-height))
+                  ;; create a model node
+                  (ztree.view.main:set-model-node 
+                   (ztree.model.node::create-root-node "~/difftest/diff1" "~/difftest/diff2"))
                   ;; keyboard input loop with ESC as an exit condition
                   (let ((key nil))
-                    (loop while (not (eq (setf key (getch)) +KEY-ESC+)) do
+                    (loop while (setf key (getch)) do
                          (handle-key key))))
+
               ;; error handling: wrong screen size
-              (on-bad-screen-size (what) (format *error-output* (description what)))))
+              (on-bad-screen-size (what) (format *error-output* (description what)))
+              (on-exit-command (command) (message "Exiting...") (getch))))
           ;; destroy windows
           (ztree.view.help:destroy-view)
           (ztree.view.message:destroy-view)
           (ztree.view.main:destroy-view)))))
-
 

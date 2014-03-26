@@ -15,4 +15,5 @@
                       :depends-on ("constants"
                                    "message-view"
                                    "help-view"
-                                   "main-view"))))
+                                   "main-view"
+                                   "model-node"))))

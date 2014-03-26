@@ -30,13 +30,14 @@
            :destroy-view
            :resize-view
            :process-key
+           :set-model-node
            :refresh-view))
 
 (in-package :ztree.view.main)
 
 (shadowing-import 'timeout)
 
-(defstruct ncurses-wrapper window x y width height)
+(defstruct ncurses-wrapper window x y width height node)
 
 
 (defvar *main-window* (make-ncurses-wrapper)
@@ -56,14 +57,17 @@
   (setf (ncurses-wrapper-y *main-window*) y)
   (setf (ncurses-wrapper-width *main-window*) width)
   (setf (ncurses-wrapper-height *main-window*) height)
-  (box (ncurses-wrapper-window *main-window*) 0 0)
-  (wrefresh (ncurses-wrapper-window *main-window*)))
-
+  (refresh-view))
 
 
 (defun refresh-view ()
-  (if (ncurses-wrapper-window *main-window*)
-      (wrefresh (ncurses-wrapper-window *main-window*))))
+  ;; if we have a ncurses window
+  (when (ncurses-wrapper-window *main-window*)
+    (wclear (ncurses-wrapper-window *main-window*))
+    (box (ncurses-wrapper-window *main-window*) 0 0)
+    (wrefresh (ncurses-wrapper-window *main-window*))
+    (when (ncurses-wrapper-node *main-window*)
+      (refresh-node))))
 
 (defun resize-view (x y width height)
   (wclear (ncurses-wrapper-window *main-window*))
@@ -129,6 +133,13 @@
         (t
          (message (format nil "Pressed: ~a" key))))
   (refresh-view))
+
+(defun set-model-node (node)
+  (setf (ncurses-wrapper-node *main-window*) node)
+  (refresh-view))
+
+(defun refresh-node ()
+  (wrefresh (ncurses-wrapper-window *main-window*)))
 
 
 ;;; main-view.cl ends here
