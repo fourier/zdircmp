@@ -291,7 +291,7 @@ the rest is the combined list of nodes"
         (when (not file1)
           ;; if it is a directory, set the whole subtree to children
           (when (file-directory-p file2)
-            (setq children nil));(subtree node file2 'right)))
+            (setq children (subtree node file2 'right)))
           ;; update the different status for the whole comparison
           (setq different-dir (update-diff different-dir 'new))
           ;; set calculated children to the node

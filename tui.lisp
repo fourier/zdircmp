@@ -231,7 +231,7 @@ Params: `win' is a window name,
 
               ;; error handling: wrong screen size
               (on-bad-screen-size (what) (format *error-output* (description what)))
-              (on-exit-command (command) (message "Exiting...") (getch))))
+              (on-exit-command (command) (message "Exiting..."))))
           ;; destroy windows
           (ztree.view.help:destroy-view)
           (ztree.view.message:destroy-view)
