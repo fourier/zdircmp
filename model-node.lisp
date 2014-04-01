@@ -120,9 +120,12 @@
 
 (defun files-equal (file1 file2)
   "Compare files using external diff. Returns t if equal"
-  (let ((f1 (namestring (file-exists-p file1)))
-        (f2 (namestring (file-exists-p file2))))
-    (not (asdf/run-program:run-program (list "diff" "-q" f1 f2) :ignore-error-status t :output :lines))))
+  (let* ((f1 (namestring (file-exists-p file1)))
+         (f2 (namestring (file-exists-p file2)))
+         (cmd (if (fboundp 'asdf/run-program:run-program)
+                  `(asdf/run-program:run-program (list "diff" "-q" ,f1 ,f2) :ignore-error-status t :output :lines)
+                  `(with-output-to-string (out) (sb-ext:run-program "diff" '("-q" ,f1 ,f2) :output out :search t)))))
+    (not (eval cmd))))
 
 
 (defun diff-node-partial-rescan (node)
