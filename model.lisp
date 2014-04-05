@@ -1,15 +1,6 @@
-;;; ztree-diff.el --- Text mode diff for directory trees
+;;; model.lisp --- Text mode diff model for directory trees
 
-;; Copyright (C) 2013 Alexey Veretennikov
-;;
-;; Author: Alexey Veretennikov <alexey dot veretennikov at gmail dot com>
-;; Created: 2013-11-1l
-;; Version: 1.0.0
-;; Keywords: files
-;; URL: https://github.com/fourier/ztree
-;; Compatibility: GNU Emacs GNU Emacs 24.x
-;;
-;; This file is NOT part of GNU Emacs.
+;; Copyright (C) 2014 Alexey Veretennikov
 ;;
 ;; This program is free software; you can redistribute it and/or
 ;; modify it under the terms of the GNU General Public License
@@ -27,47 +18,6 @@
 ;;; Commentary:
 
 ;;; Code:
-(require 'ztree-view)
-(require 'ztree-diff-model)
-
-(defconst ztree-diff-hidden-files-regexp "^\\."
-  "Hidden files regexp. By default all filest starting with dot '.',
-including . and ..")
-
-(defface ztreep-diff-header-face
-  '((((type tty pc) (class color)) :foreground "lightblue" :weight bold)
-    (((background dark)) (:height 1.2 :foreground "lightblue" :weight bold))
-    (t :height 1.2 :foreground "darkblue" :weight bold))
-  "*Face used for the header in Ztree Diff buffer."
-  :group 'Ztree-diff :group 'font-lock-highlighting-faces)
-(defvar ztreep-diff-header-face 'ztreep-diff-header-face)
-
-(defface ztreep-diff-header-small-face
-  '((((type tty pc) (class color)) :foreground "lightblue" :weight bold)
-    (((background dark)) (:foreground "lightblue" :weight bold))
-    (t :weight bold :foreground "darkblue"))
-  "*Face used for the header in Ztree Diff buffer."
-  :group 'Ztree-diff :group 'font-lock-highlighting-faces)
-(defvar ztreep-diff-header-small-face 'ztreep-diff-header-small-face)
-
-(defface ztreep-diff-model-diff-face
-  '((t                   (:foreground "red")))
-  "*Face used for different files in Ztree-diff."
-  :group 'Ztree-diff :group 'font-lock-highlighting-faces)
-(defvar ztreep-diff-model-diff-face 'ztreep-diff-model-diff-face)
-
-(defface ztreep-diff-model-add-face
-  '((t                   (:foreground "blue")))
-  "*Face used for added files in Ztree-diff."
-  :group 'Ztree-diff :group 'font-lock-highlighting-faces)
-(defvar ztreep-diff-model-add-face 'ztreep-diff-model-add-face)
-
-(defface ztreep-diff-model-normal-face
-  '((t                   (:foreground "#7f7f7f")))
-  "*Face used for non-modified files in Ztree-diff."
-  :group 'Ztree-diff :group 'font-lock-highlighting-faces)
-(defvar ztreep-diff-model-normal-face 'ztreep-diff-model-normal-face)
-
 
 (defvar ztree-diff-filter-list nil
   "List of regexp file names to filter out")
@@ -99,11 +49,11 @@ including . and ..")
     ([f5] . ztree-diff-full-rescan)))
 
 
-(defun ztree-diff-node-face (node)
-  (let ((diff (ztree-diff-node-different node)))
-    (cond ((eq diff 'diff) ztreep-diff-model-diff-face)
-          ((eq diff 'new)  ztreep-diff-model-add-face)
-          (t ztreep-diff-model-normal-face))))  
+;; (defun ztree-diff-node-face (node)
+;;   (let ((diff (ztree-diff-node-different node)))
+;;     (cond ((eq diff 'diff) ztreep-diff-model-diff-face)
+;;           ((eq diff 'new)  ztreep-diff-model-add-face)
+;;           (t ztreep-diff-model-normal-face))))  
 
 (defun ztree-diff-insert-buffer-header ()
   (insert-with-face "Differences tree" ztreep-diff-header-face)
@@ -430,7 +380,4 @@ apparently shall not be visible"
     (ztree-refresh-buffer)))
           
 
-
-
-(provide 'ztree-diff)
-;;; ztree-diff.el ends here
+;;; model.lisp ends here

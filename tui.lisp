@@ -223,7 +223,7 @@ Params: `win' is a window name,
                     (ztree.view.main:create-view 0 main-view-y *cols* main-view-height))
                   ;; create a model node
                   (ztree.view.main:set-model-node 
-                   (ztree.model.node::create-root-node "~/difftest/diff1" "~/difftest/diff2"))
+                   (ztree.model.node::create-root-node "~/difftest/diff1" "~/difftest/diff2" :message-function 'message))
                   ;; keyboard input loop with ESC as an exit condition
                   (let ((key nil))
                     (loop while (setf key (getch)) do

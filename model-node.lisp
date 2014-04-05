@@ -1,4 +1,4 @@
-;;; model-node.cl --- diff model for directory trees
+;;; model-node.lisp --- diff model for directory trees
 
 ;; Copyright (C) 2014 Alexey Veretennikov
 ;;
@@ -25,7 +25,7 @@
 (defpackage :ztree.model.node
   (:use :common-lisp :ztree.util :cl-fad)
   ;; import message function from ztree.view.message for easy use of messages
-  (:import-from :ztree.view.message :message)
+  ;;(:import-from :ztree.view.message :message)
   (:export :update-wait-message
            :create-root-node
            :diff-node
@@ -41,11 +41,14 @@
 
 (in-package :ztree.model.node)
 
+(defvar *message-fun* nil
+  "Message function to report from model")
 
 (defvar wait-message nil
   "Message showing while constructing the diff tree")
-;;(make-variable-buffer-local 'wait-message)
 
+(defun message (str)
+  (when *message-fun* (funcall *message-fun* str)))
 
 (defun update-wait-message ()
   (when wait-message
@@ -123,9 +126,9 @@
   (let* ((f1 (namestring (file-exists-p file1)))
          (f2 (namestring (file-exists-p file2)))
          (cmd (if (fboundp 'asdf/run-program:run-program)
-                  `(asdf/run-program:run-program (list "diff" "-q" ,f1 ,f2) :ignore-error-status t :output :lines)
-                  `(with-output-to-string (out) (sb-ext:run-program "diff" '("-q" ,f1 ,f2) :output out :search t)))))
-    (not (eval cmd))))
+                  `(asdf/run-program:run-program (list "diff" "-q" ,f1 ,f2) :ignore-error-status t)
+                  `(asdf:run-shell-command (format nil "diff -q \"~a\" \"~a\"" ,f1 ,f2)))))
+    (eq (eval cmd) 0)))
 
 
 (defun diff-node-partial-rescan (node)
@@ -304,11 +307,12 @@ the rest is the combined list of nodes"
     ;; result is a pair: difference status and nodes list
     (cons different-dir result)))
 
-(defun create-root-node (dir1 dir2)
+(defun create-root-node (dir1 dir2 &key (message-function nil))
   (when (not (file-directory-p dir1))
     (error (format nil "Path ~a is not a directory" dir1)))
   (when (not (file-directory-p dir2))
     (error (format nil "Path ~a is not a directory" dir2)))
+  (setf *message-fun* message-function)
   (setq wait-message (concat "Comparing " dir1 " and " dir2 " ..."))
   (let* ((model 
           (make-diff-node
@@ -335,5 +339,9 @@ the rest is the combined list of nodes"
     (setf (diff-node-different node) (car traverse)))
   (message "Done."))
 
-;;(ztree.model.node::create-root-node "~/difftest/diff1" "~/difftest/diff2")
-;;; model-node.cl ends here
+;; Examples:
+;; (ztree.model.node::create-root-node "~/difftest/diff1" "~/difftest/diff2")
+;; with optional message function:
+;; (ztree.model.node::create-root-node "~/difftest/diff1" "~/difftest/diff2" :message-function #'(lambda (str) (princ str)))
+
+;;; model-node.lisp ends here

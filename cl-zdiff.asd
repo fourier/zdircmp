@@ -5,7 +5,7 @@
                (:file "message-view")
                (:file "help-view")
                (:file "model-node"
-                      :depends-on ("util" "message-view"))
+                      :depends-on ("util"))
                (:file "main-view"
                       :depends-on ("util"
                                    "model-node"
