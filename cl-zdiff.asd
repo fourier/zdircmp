@@ -6,6 +6,8 @@
                (:file "help-view")
                (:file "model-node"
                       :depends-on ("util"))
+               (:file "model-tree"
+                      :depends-on ("util" "model-node"))
                (:file "main-view"
                       :depends-on ("util"
                                    "model-node"

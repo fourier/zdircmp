@@ -28,7 +28,15 @@
   ;;(:import-from :ztree.view.message :message)
   (:export :update-wait-message
            :create-root-node
-           :diff-node
+           ;; diff-node getters/setters
+           :diff-node-parent
+           :diff-node-left-path
+           :diff-node-right-path
+           :diff-node-short-name
+           :diff-node-right-short-name
+           :diff-node-children
+           :diff-node-different
+           ;; diff-node functions
            :diff-node-short-name-wrapper
            :diff-node-to-string
            :diff-node-is-directory
@@ -57,7 +65,7 @@
 
 
 
-;; Create a record diff-node with defined fielsd and getters/setters
+;; Create a struct diff-node with defined fielsd and getters/setters
 ;; here:
 ;; parent - parent node
 ;; left-path is the full path on the left side of the diff window,
@@ -65,7 +73,6 @@
 ;; short-name - is the file or directory name
 ;; children - list of nodes - files or directories if the node is a directory
 ;; different = {nil, 'new, 'diff} - means comparison status
-                                        ;(defrecord diff-node (parent left-path right-path short-name right-short-name children different))
 (defstruct diff-node parent left-path right-path short-name right-short-name children different)
 
 
