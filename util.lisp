@@ -1,4 +1,4 @@
-;;; util.el --- Auxulary utilities for the ztree package
+;;; util.lisp --- Auxulary utilities for the cl-ztree app
 
 ;; Copyright (C) 2014 Alexey Veretennikov
 ;;
@@ -139,4 +139,4 @@ Used since car-safe returns nil for atoms"
 (defmacro concat (str &rest others)
   `(concatenate 'string ,str ,@others))
 
-;;; util.cl ends here
+;;; util.lisp ends here

@@ -1,4 +1,4 @@
-;;; constants.cl --- constants defined in the project
+;;; constants.lisp --- constants defined in the project
 
 ;; Copyright (C) 2014 Alexey Veretennikov
 ;;
@@ -67,4 +67,4 @@
 (let ((pack (find-package :ztree.constants)))
   (do-all-symbols (sym pack) (when (eql (symbol-package sym) pack) (export sym))))
 
-;;; constants.cl ends here
+;;; constants.lisp ends here

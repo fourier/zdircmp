@@ -1,4 +1,4 @@
-;;; main-view.cl --- main TUI view (window) for directory trees
+;;; main-view.lisp --- main TUI view (window) for directory trees
 
 ;; Copyright (C) 2014 Alexey Veretennikov
 ;;
@@ -142,4 +142,4 @@
   (wrefresh (ncurses-wrapper-window *main-window*)))
 
 
-;;; main-view.cl ends here
+;;; main-view.lisp ends here

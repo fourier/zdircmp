@@ -1,4 +1,4 @@
-;;; message-view.cl --- message TUI view (window) for directory trees
+;;; message-view.lisp --- message TUI view (window) for directory trees
 
 ;; Copyright (C) 2014 Alexey Veretennikov
 ;;
@@ -71,4 +71,4 @@
 
 
 
-;;; message-view.cl ends here
+;;; message-view.lisp ends here

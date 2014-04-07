@@ -1,4 +1,4 @@
-;;; help-view.cl --- Help text view (window) for directory trees
+;;; help-view.lisp --- Help text view (window) for directory trees
 
 ;; Copyright (C) 2014 Alexey Veretennikov
 ;;
@@ -58,4 +58,4 @@
 
 
 
-;;; help-view.cl ends here
+;;; help-view.lisp ends here
