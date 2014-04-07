@@ -82,7 +82,7 @@ OFFSET - offset to the left from the beginning of the line (depth)"
     ;; make sure that the root is expanded
     (toggle-expand-state root t)
     ;; and create a tree
-    (insert-node-contents root 0 0 0)))
+    (insert-node-contents root 0 0)))
 
 (defun collapse-all ()
   (setf (model-tree-expanded *model*) (make-hash-table)))
@@ -106,12 +106,10 @@ OFFSET - offset to the left from the beginning of the line (depth)"
 
 
 
-(defun insert-node-contents (node offset line parent-line)
+(defun insert-node-contents (node offset parent-line)
   ;; insert the node itself to the line with given parent and offset
   (let ((new-line 
          (vector-push-extend (make-tree-entry :node node :parent-line parent-line :offset offset) (model-tree-entries *model*))))
-    ;; sanity check
-    (assert (eq new-line line)))
   (when (node-expanded-p node)
     ;; insert all children's contents, but with offset
     (let ((children (diff-node-children node))
@@ -121,9 +119,7 @@ OFFSET - offset to the left from the beginning of the line (depth)"
       (dotimes (index (length children))
         (insert-node-contents (nth index children)
                               new-offset
-                              ;; parent line + zero-based-index + 1
-                              (+ 1 line index)
-                              line)))))
+                              new-line))))))
     
     
 
