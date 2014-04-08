@@ -21,8 +21,6 @@
 
 ;;; Code:
 
-(require 'cl-fad)
-
 (defpackage :ztree.util
   (:use :common-lisp)
   (:use :common-lisp :cl-fad)
@@ -40,7 +38,8 @@
 
 (in-package :ztree.util)
 
-;;(require 'cl-ncurses)
+(eval-when (:load-toplevel :compile-toplevel :execute)
+  (require 'cl-fad))
 
 
 ;; Based on http://abcl.org/svn/trunk/abcl/build-abcl.lisp

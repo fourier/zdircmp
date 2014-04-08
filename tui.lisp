@@ -201,7 +201,9 @@ Params: `win' is a window name,
           (noecho)
           ;; hide cursor
           (curs-set 0)
-
+          ;; clear and refresh screen
+          (clear)
+          (refresh)
           ;; get the screen dimensions
           (let ((maxcols 0)
                 (maxrows 0))

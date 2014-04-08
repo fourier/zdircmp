@@ -60,6 +60,28 @@ is the side of the cursor - 'left or 'right"
 (defvar *main-window* (make-main-window)
   "Main ncurses window")
 
+
+(defmacro with-color (color &body body)
+  `(let ((color-value
+         (case ,color
+           (:white '1)
+           (:red '2)
+           (:green '3)
+           (:blue '4)
+           (:yellow '5)
+           (:magenta '6)
+           (:cyan '7)
+           (:black-on-white '8)
+           (:red-on-white '9)
+           (:green-on-white '10)
+           (:blue-on-white '7)
+           (otherwise '1))))
+    (progn
+       (cl-ncurses:wattron (main-window-window *main-window*) (cl-ncurses:COLOR-PAIR color-value))
+       ,@body
+       (cl-ncurses:wattron (main-window-window *main-window*) (cl-ncurses:COLOR-PAIR 1)))))
+
+
 (defun destroy-view ()
   "Clears and destroys the ncurses window"
   (when (main-window-window *main-window*)
@@ -77,6 +99,21 @@ is the side of the cursor - 'left or 'right"
   (setf (main-window-y *main-window*) y)
   (setf (main-window-width *main-window*) width)
   (setf (main-window-height *main-window*) height)
+  ;; create the color pairs
+  ;; create color pairs
+  ;; foregrounds
+  (cl-ncurses:init-pair 1 cl-ncurses:COLOR_WHITE cl-ncurses:COLOR_BLACK)
+  (cl-ncurses:init-pair 2 cl-ncurses:COLOR_RED cl-ncurses:COLOR_BLACK)
+  (cl-ncurses:init-pair 3 cl-ncurses:COLOR_GREEN cl-ncurses:COLOR_BLACK)
+  (cl-ncurses:init-pair 4 cl-ncurses:COLOR_BLUE cl-ncurses:COLOR_BLACK)
+  (cl-ncurses:init-pair 5 cl-ncurses:COLOR_YELLOW cl-ncurses:COLOR_BLACK)
+  (cl-ncurses:init-pair 6 cl-ncurses:COLOR_MAGENTA cl-ncurses:COLOR_BLACK)
+  (cl-ncurses:init-pair 7 cl-ncurses:COLOR_CYAN cl-ncurses:COLOR_BLACK)
+  ;; backgrounds
+  (cl-ncurses:init-pair 8 cl-ncurses:COLOR_BLACK cl-ncurses:COLOR_WHITE)
+  (cl-ncurses:init-pair 9 cl-ncurses:COLOR_RED cl-ncurses:COLOR_WHITE)
+  (cl-ncurses:init-pair 10 cl-ncurses:COLOR_GREEN cl-ncurses:COLOR_WHITE)
+  (cl-ncurses:init-pair 11 cl-ncurses:COLOR_BLUE cl-ncurses:COLOR_WHITE)
   (refresh-view))
 
 
@@ -212,7 +249,8 @@ and redraws all data inside"
                          (diff-node-short-name node)
                          (diff-node-right-short-name node)))
          (expandable (diff-node-is-directory node))
-         (expanded   (node-expanded-p node)))
+         (expanded   (node-expanded-p node))
+         (diff       (diff-node-different node)))
     (if (eq side 'ztree.model.node::both)
         ;; insert left AND right labels
         (progn 
@@ -221,33 +259,35 @@ and redraws all data inside"
                                expanded
                                window-line
                                offset
-                               'ztree.model.node::left)
+                               'ztree.model.node::left
+                               diff)
           (insert-single-entry short-name
                                expandable
                                expanded
                                window-line
                                offset
-                               'ztree.model.node::right))
+                               'ztree.model.node::right
+                               diff))
         (insert-single-entry short-name
                              expandable
                              expanded
                              window-line
                              offset
-                             side))))
+                             side
+                             diff))))
 
-
-        
-    ;; (mvwprintw (main-window-window *main-window*)
-    ;;            window-line
-    ;;            (+ +left-offset+ offset)
-    ;;        (diff-node-short-name node))))
+(defun color-for-diff (diff)
+  (cond ((eq diff 'ztree.model.node::diff) :red)
+          ((eq diff 'ztree.model.node::new)  :blue)
+          (t :white)))
 
 
 (defun insert-single-entry (short-name
                             expandable expanded
                             window-line
                             offset
-                            side)
+                            side
+                            diff)
   (let* ((middle (floor (/ (- (main-window-width *main-window*) 2) 2)))
          (x-position (+ +left-offset+
                         (* offset 4)
@@ -255,11 +295,13 @@ and redraws all data inside"
          (win (main-window-window *main-window*)))
     (flet ((node-sign (exp x y)
              (let ((text (format nil "[~a]" (if exp "-" "+"))))
-               (mvwprintw win y x text))))
+               (with-color :white
+                 (mvwprintw win y x text)))))
       (when expandable
         (node-sign expanded x-position window-line)   ; for expandable nodes insert "[+/-]"
         (setf x-position (+ x-position 4)))
-      (mvwprintw win window-line x-position short-name))))
+      (with-color (color-for-diff diff)
+        (mvwprintw win window-line x-position short-name)))))
 
 (defun refresh-contents ()
   "Redraws all window's contents - tree and separator"
