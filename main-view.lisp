@@ -42,9 +42,9 @@
 
 (defstruct cursor
   "Cursor position. LINE is the line number in window, SIDE
-is the side of the cursor - 'left or 'right"
+is the side of the cursor - 'ztree.model.node::left or 'ztree.model.node::right"
   (line 0)
-  (side 'left))
+  (side 'ztree.model.node::left))
 
 (defstruct main-window
   (window nil)
@@ -74,7 +74,7 @@ is the side of the cursor - 'left or 'right"
            (:black-on-white '8)
            (:red-on-white '9)
            (:green-on-white '10)
-           (:blue-on-white '7)
+           (:blue-on-white '11)
            (otherwise '1))))
     (progn
        (cl-ncurses:wattron (main-window-window *main-window*) (cl-ncurses:COLOR-PAIR color-value))
@@ -158,13 +158,31 @@ in the buffer"
     (refresh-view)))
 
 (defun process-key-up ()
-  "UP key event handler - scrolls up 1 line contents if possible"
-  (scroll-lines -1))
+  "UP key event handler - move cursor up one line"
+  (let ((cursor-pos (cursor-line (main-window-cursor *main-window*))))
+    ;; if the cursor is not on the first line, just move it up
+    (if (> cursor-pos 0)
+        (progn
+          (setf (cursor-line (main-window-cursor *main-window*)) (1- cursor-pos))
+          (refresh-view))
+        ;; otherwise - cursor is on the same place, but window moves up
+        (scroll-lines -1))))
 
 (defun process-key-down ()
-  "DOWN key event handler - scrolls down 1 line contents if possible"
-  (scroll-lines 1))
+  "DOWN key event handler - move cursor down one line"
+  (let ((cursor-pos (cursor-line (main-window-cursor *main-window*))))
+    (when (/= (+ (main-window-start-line *main-window*) cursor-pos)
+              (1- (tree-number-of-lines)))
+      ;; if the cursor is on the last line, scroll down, cursor is on the same place
+      (if (= cursor-pos (- (main-window-height *main-window*) 3))
+          (scroll-lines 1)
+          (progn
+            ;; otherwise update its position
+            (setf (cursor-line (main-window-cursor *main-window*)) (1+ cursor-pos))
+            (refresh-view))))))
 
+
+  
 (defun process-key-pgup ()
   "PAGE UP key event handler - scrolls up 1 screen if possible"
   (scroll-lines (- (main-window-height *main-window*))))
@@ -175,8 +193,20 @@ in the buffer"
 
 (defun process-key-return ()
   "ENTER key event handler - opens/close directories"
-  (let ((expanded (node-expanded-p (tree-entry-node (tree-entry-at-line 4)))))
-    (toggle-expand-state-by-line 4 (not expanded))))
+  (let* ((cursor-pos (cursor-line (main-window-cursor *main-window*)))
+         (line (+ (main-window-start-line *main-window*) cursor-pos))
+         (expanded (node-expanded-p (tree-entry-node (tree-entry-at-line line)))))
+    (toggle-expand-state-by-line line (not expanded))))
+
+(defun process-key-tab ()
+  "TAB key event handler - jump to the other side of the window"
+  (let ((side (cursor-side (main-window-cursor *main-window*))))
+    (if (eq side 'ztree.model.node::left)
+        (setf (cursor-side (main-window-cursor *main-window*))
+              'ztree.model.node::right)
+        (setf (cursor-side (main-window-cursor *main-window*))
+              'ztree.model.node::left))
+    (refresh-view)))
 
 (defun process-key (key)
   "Keypress dispatcher"
@@ -199,7 +229,7 @@ in the buffer"
         ((eq key +KEY-END+) 
          (message "END"))
         ((eq key +KEY-TAB+) 
-         (message "TAB"))
+         (process-key-tab))
         ((eq key +KEY-NPAGE+) 
          (process-key-pgdn))
         ((eq key +KEY-PPAGE+)
@@ -268,20 +298,43 @@ and redraws all data inside"
                                offset
                                'ztree.model.node::right
                                diff))
-        (insert-single-entry short-name
-                             expandable
-                             expanded
-                             window-line
-                             offset
-                             side
-                             diff))))
+        (progn
+          (insert-single-entry short-name
+                               expandable
+                               expanded
+                               window-line
+                               offset
+                               side
+                               diff)
+          (insert-dummy-cursor-opposite-side window-line
+                                             offset
+                                             side)))))
+
+(defun insert-dummy-cursor-opposite-side (window-line offset side)
+  (let* ((middle (floor (/ (- (main-window-width *main-window*) 2) 2)))
+         (x-position (+ +left-offset+
+                        (* offset 4)
+                        (if (eq side 'ztree.model.node::left) middle 0)))
+         (win (main-window-window *main-window*)))
+    (when (and (= (1- window-line)
+                  (cursor-line (main-window-cursor *main-window*)))
+               t)
+      (with-color :black-on-white
+        (mvwprintw win window-line x-position " ")))))
+
+
 
 (defun color-for-diff (diff)
   (cond ((eq diff 'ztree.model.node::diff) :red)
-          ((eq diff 'ztree.model.node::new)  :blue)
-          (t :white)))
+        ((eq diff 'ztree.model.node::new)  :blue)
+        (t :white)))
 
-
+(defun inverse-color (color)
+  (cond ((eq color :red) :red-on-white)
+        ((eq color :blue) :blue-on-white)
+        ((eq color :green) :green-on-white)
+          (t :black-on-white)))
+  
 (defun insert-single-entry (short-name
                             expandable expanded
                             window-line
@@ -297,11 +350,18 @@ and redraws all data inside"
              (let ((text (format nil "[~a]" (if exp "-" "+"))))
                (with-color :white
                  (mvwprintw win y x text)))))
+      ;; for expandable nodes insert "[+/-]"
       (when expandable
-        (node-sign expanded x-position window-line)   ; for expandable nodes insert "[+/-]"
+        (node-sign expanded x-position window-line)   
         (setf x-position (+ x-position 4)))
-      (with-color (color-for-diff diff)
-        (mvwprintw win window-line x-position short-name)))))
+      ;; determine if the line is under the cursor
+      (let ((color (color-for-diff diff)))
+        (when (and (= (1- window-line)
+                      (cursor-line (main-window-cursor *main-window*)))
+                   (eq (cursor-side (main-window-cursor *main-window*)) side))
+          (setf color (inverse-color color)))
+        (with-color color
+          (mvwprintw win window-line x-position short-name))))))
 
 (defun refresh-contents ()
   "Redraws all window's contents - tree and separator"

@@ -26,11 +26,7 @@
   (:use :common-lisp :cl-fad)
   (:export :printable-string   
            :file-short-name
-           :newline
-           :beginning-of-line
-           :newline-and-begin
            :car-atom
-           :insert-with-face
            :file-directory-p
            :directory-files
            :concat
@@ -103,26 +99,13 @@ is replaced with replacement."
     (if last-slash-pos                                   ; path has slashes
         (subseq path (1+ last-slash-pos))                ; cut from the slash position
         path)))                                          ; just a path otherwise
-        
-(defun newline () )
-(defun beginning-of-line () )
 
-(defun newline-and-begin ()
-  (newline)
-  (beginning-of-line))
 
 (defun car-atom (value)
   "Returns value if value is an atom, otherwise (car value) or nil.
 Used since car-safe returns nil for atoms"
   (if (atom value) value (car value)))
 
-
-(defun insert-with-face (text face)
-  "Insert text with the face provided"
-  (error 'not-implemented "Not implemented insert-with-face"))
-;; (let ((start (point)))
-;;   (insert text)
-;;   (put-text-property start (point) 'face face)))
 
 (defun file-directory-p (filename)
   "Returns t if `filename' exists and is a directory, nil otherwise"
