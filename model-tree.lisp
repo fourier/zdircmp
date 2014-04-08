@@ -26,6 +26,13 @@
   (:use :common-lisp :ztree.util :ztree.model.node)
   (:export
    :refresh-tree
+   :tree-number-of-lines
+   :tree-entry-at-line
+   :tree-entry-node
+   :tree-entry-parent-line
+   :tree-entry-offset
+   :node-expanded-p
+   :toggle-expand-state-by-line
    ))
 
 
@@ -67,7 +74,17 @@ OFFSET - offset to the left from the beginning of the line (depth)"
 (defvar *model* (make-model-tree)
   "Tree model")
 
+(defun tree-number-of-lines ()
+  "Number of lines in the tree"
+  (length (model-tree-entries *model*)))
+
+(defun tree-entry-at-line (line)
+  "Returns the tree entry for a given line"
+  (elt (model-tree-entries *model*) line))
+
+    
 (defun refresh-tree (root)
+  "Refreshes the tree representing lines and their corresponding nodes"
   ;; save the old list of expanded nodes
   (let ((expanded-list
          (if (or

@@ -23,7 +23,7 @@
 
 ;;; Code:
 (defpackage :ztree.view.main
-  (:use ::common-lisp :cl-ncurses :ztree.util :ztree.model.node :ztree.constants)
+  (:use ::common-lisp :cl-ncurses :ztree.util :ztree.model.node :ztree.model.tree :ztree.constants)
   ;; import message function from ztree.view.message for easy use of messages
   (:import-from :ztree.view.message :message)
   (:export :create-view
@@ -37,61 +37,122 @@
 
 (shadowing-import 'timeout)
 
-(defstruct ncurses-wrapper window x y width height node)
+(defconstant +left-offset+ 2)
 
 
-(defvar *main-window* (make-ncurses-wrapper)
+(defstruct cursor
+  "Cursor position. LINE is the line number in window, SIDE
+is the side of the cursor - 'left or 'right"
+  (line 0)
+  (side 'left))
+
+(defstruct main-window
+  (window nil)
+  (x 0)
+  (y 0)
+  (width 0)
+  (height 0)
+  (node nil)
+  (start-line 0)
+  (cursor (make-cursor)))
+
+
+(defvar *main-window* (make-main-window)
   "Main ncurses window")
 
 (defun destroy-view ()
-  (when (ncurses-wrapper-window *main-window*)
-    (wborder (ncurses-wrapper-window *main-window*) 32 32 32 32 32 32 32 32)
-    (wrefresh (ncurses-wrapper-window *main-window*))
-    (delwin (ncurses-wrapper-window *main-window*))
-    (setf (ncurses-wrapper-window *main-window*) nil)))
+  "Clears and destroys the ncurses window"
+  (when (main-window-window *main-window*)
+    ;; border with spaces
+    (wborder (main-window-window *main-window*) 32 32 32 32 32 32 32 32)
+    (wrefresh (main-window-window *main-window*))
+    (delwin (main-window-window *main-window*))
+    (setf (main-window-window *main-window*) nil)))
 
 (defun create-view (x y width height)
+  "Creates the ncurses window and refreshes its contents"
   (destroy-view)
-  (setf (ncurses-wrapper-window *main-window*) (newwin height width y x))
-  (setf (ncurses-wrapper-x *main-window*) x)
-  (setf (ncurses-wrapper-y *main-window*) y)
-  (setf (ncurses-wrapper-width *main-window*) width)
-  (setf (ncurses-wrapper-height *main-window*) height)
+  (setf (main-window-window *main-window*) (newwin height width y x))
+  (setf (main-window-x *main-window*) x)
+  (setf (main-window-y *main-window*) y)
+  (setf (main-window-width *main-window*) width)
+  (setf (main-window-height *main-window*) height)
   (refresh-view))
 
 
 (defun refresh-view ()
   ;; if we have a ncurses window
-  (when (ncurses-wrapper-window *main-window*)
-    (wclear (ncurses-wrapper-window *main-window*))
-    (box (ncurses-wrapper-window *main-window*) 0 0)
-    (wrefresh (ncurses-wrapper-window *main-window*))
-    (when (ncurses-wrapper-node *main-window*)
-      (refresh-node))))
+  (when (main-window-window *main-window*)
+    (wclear (main-window-window *main-window*))
+    (box (main-window-window *main-window*) 0 0)
+    (wrefresh (main-window-window *main-window*))
+    (when (main-window-node *main-window*)
+      (refresh-contents))))
 
 (defun resize-view (x y width height)
-  (wclear (ncurses-wrapper-window *main-window*))
-  (wresize (ncurses-wrapper-window *main-window*) height width)
-  (mvwin (ncurses-wrapper-window *main-window*) y x)
-  (setf (ncurses-wrapper-x *main-window*) x)
-  (setf (ncurses-wrapper-y *main-window*) y)
-  (setf (ncurses-wrapper-width *main-window*) width)
-  (setf (ncurses-wrapper-height *main-window*) height)
-  (box (ncurses-wrapper-window *main-window*) 0 0)
+  (wclear (main-window-window *main-window*))
+  (wresize (main-window-window *main-window*) height width)
+  (mvwin (main-window-window *main-window*) y x)
+  (setf (main-window-x *main-window*) x)
+  (setf (main-window-y *main-window*) y)
+  (setf (main-window-width *main-window*) width)
+  (setf (main-window-height *main-window*) height)
+  (box (main-window-window *main-window*) 0 0)
   (refresh-view))
 
 
+(defun get-new-position (number-of-lines start-line height tree-size)
+  "Calculate the new start screen line by given NUMBER-OF-LINES to scroll,
+which may be negative, START-LINE - line number of the most upper visible line,
+HEIGHT - the window height in lines and TREE-SIZE - the number of lines
+in the buffer"
+  (let* ((desired-new-position (+ start-line number-of-lines))
+         (allowed-new-position (- tree-size height))
+         (new-position (min desired-new-position allowed-new-position)))
+    (if (>= new-position 0) new-position 0)))
+
+(defun scroll-lines (number-of-lines)
+  "Scrolls the current window to NUMBER-OF-LINES"
+  (let ((new-position (get-new-position number-of-lines
+                                        (main-window-start-line *main-window*)
+                                        (- (main-window-height *main-window*) 2)
+                                        (tree-number-of-lines))))
+    (setf (main-window-start-line *main-window*) new-position)
+    (refresh-view)))
+
+(defun process-key-up ()
+  "UP key event handler - scrolls up 1 line contents if possible"
+  (scroll-lines -1))
+
+(defun process-key-down ()
+  "DOWN key event handler - scrolls down 1 line contents if possible"
+  (scroll-lines 1))
+
+(defun process-key-pgup ()
+  "PAGE UP key event handler - scrolls up 1 screen if possible"
+  (scroll-lines (- (main-window-height *main-window*))))
+
+(defun process-key-pgdn ()
+  "PAGE DOWN key event handler - scrolls down 1 screen if possible"
+  (scroll-lines (main-window-height *main-window*)))
+
+(defun process-key-return ()
+  "ENTER key event handler - opens/close directories"
+  (let ((expanded (node-expanded-p (tree-entry-node (tree-entry-at-line 4)))))
+    (toggle-expand-state-by-line 4 (not expanded))))
+
 (defun process-key (key)
+  "Keypress dispatcher"
   (cond ((eq key +KEY-UP+)
-         (message "UP"))
+         (process-key-up))
         ((eq key +KEY-DOWN+)
-         (message "DOWN"))
+         (process-key-down))
         ((eq key +KEY-LEFT+) 
          (message "LEFT"))
         ((eq key +KEY-RIGHT+) 
          (message "RIGHT"))
         ((eq key +KEY-ENTER+) 
-         (message "ENTER"))
+         (process-key-return))
         ((eq key +KEY-SPACE+) 
          (message "SPACE"))
         ((key-backspace-p key)
@@ -103,9 +164,9 @@
         ((eq key +KEY-TAB+) 
          (message "TAB"))
         ((eq key +KEY-NPAGE+) 
-         (message "PGDN"))
-        ((eq key +KEY-PPAGE+) 
-         (message "PGUP"))
+         (process-key-pgdn))
+        ((eq key +KEY-PPAGE+)
+         (process-key-pgup))
         ((eq key +KEY-F1+) 
          (message "F1"))
         ((eq key +KEY-F2+) 
@@ -135,11 +196,91 @@
   (refresh-view))
 
 (defun set-model-node (node)
-  (setf (ncurses-wrapper-node *main-window*) node)
+  "Sets the current root node of the model. Refreshes the window
+and redraws all data inside"
+  (setf (main-window-node *main-window*) node)
+  (refresh-tree node)
   (refresh-view))
 
-(defun refresh-node ()
-  (wrefresh (ncurses-wrapper-window *main-window*)))
+
+(defun print-entry-in-window (entry window-line)
+  (let* ((node (tree-entry-node entry))
+         (offset (tree-entry-offset entry))
+         (side (diff-node-side node))
+         (short-name (if (or (eq side 'ztree.model.node::both)
+                             (eq side 'ztree.model.node::left))
+                         (diff-node-short-name node)
+                         (diff-node-right-short-name node)))
+         (expandable (diff-node-is-directory node))
+         (expanded   (node-expanded-p node)))
+    (if (eq side 'ztree.model.node::both)
+        ;; insert left AND right labels
+        (progn 
+          (insert-single-entry short-name
+                               expandable
+                               expanded
+                               window-line
+                               offset
+                               'ztree.model.node::left)
+          (insert-single-entry short-name
+                               expandable
+                               expanded
+                               window-line
+                               offset
+                               'ztree.model.node::right))
+        (insert-single-entry short-name
+                             expandable
+                             expanded
+                             window-line
+                             offset
+                             side))))
+
+
+        
+    ;; (mvwprintw (main-window-window *main-window*)
+    ;;            window-line
+    ;;            (+ +left-offset+ offset)
+    ;;        (diff-node-short-name node))))
+
+
+(defun insert-single-entry (short-name
+                            expandable expanded
+                            window-line
+                            offset
+                            side)
+  (let* ((middle (floor (/ (- (main-window-width *main-window*) 2) 2)))
+         (x-position (+ +left-offset+
+                        (* offset 4)
+                        (if (eq side 'ztree.model.node::right) middle 0)))
+         (win (main-window-window *main-window*)))
+    (flet ((node-sign (exp x y)
+             (let ((text (format nil "[~a]" (if exp "-" "+"))))
+               (mvwprintw win y x text))))
+      (when expandable
+        (node-sign expanded x-position window-line)   ; for expandable nodes insert "[+/-]"
+        (setf x-position (+ x-position 4)))
+      (mvwprintw win window-line x-position short-name))))
+
+(defun refresh-contents ()
+  "Redraws all window's contents - tree and separator"
+  ;; refresh tree in memory
+  (refresh-tree (main-window-node *main-window*))
+  ;; draw vertical separator
+  (let* ((start-line (main-window-start-line *main-window*))
+         (end-line (- (main-window-height *main-window*) 1))
+         (middle (floor (/ (- (main-window-width *main-window*) 2) 2)))
+         (available-lines (- (tree-number-of-lines) start-line)))
+    (mvwvline (main-window-window *main-window*)
+              1
+              (1+ middle)
+              (char-code #\|)
+              (- (main-window-height *main-window*) 2))
+    ;; draw all visible lines
+    (dotimes (line (min available-lines
+                        (- (main-window-height *main-window*) 2)))
+      (let* ((entry (tree-entry-at-line (+ start-line line))))
+             (print-entry-in-window entry (1+ line))
+             (wrefresh (main-window-window *main-window*))))))
 
 
 ;;; main-view.lisp ends here
