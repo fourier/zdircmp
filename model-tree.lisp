@@ -47,7 +47,12 @@ EXPANDED - hash table of expanded nodes. If node is expanded it is added
   (expanded (make-hash-table)))
            
 
-(defstruct tree-entry
+(defstruct (tree-entry
+             (:print-function (lambda (entry stream depth)
+                                (declare (ignore depth))
+                                (dotimes (x (tree-entry-offset entry))
+                                  (format stream " "))
+                                (format stream "~A" (diff-node-short-name (tree-entry-node entry))))))
   "Represents the entries in the model tree. Every entry is the line/node
 in the tree representation.
 Fields:
@@ -104,24 +109,40 @@ OFFSET - offset to the left from the beginning of the line (depth)"
                (< line (length (model-tree-entries *model*)))))
   (toggle-expand-state (tree-entry-node (aref (model-tree-entries *model*) line)) do-expand))
 
+(defun get-splitted-node-children (node)
+  "Returns pair of 2 elements: list of expandable nodes and
+list of leafs"
+  (let ((nodes (diff-node-children node)))
+    (flet ((comp (x y)
+             (string< (diff-node-short-name x)
+                      (diff-node-short-name y))))
+      (cons (sort (copy-list (remove-if-not 'diff-node-is-directory nodes)) #'comp)
+            (sort (copy-list (remove-if 'diff-node-is-directory nodes)) #'comp)))))
 
 
 (defun insert-node-contents (node offset parent-line)
-  ;; insert the node itself to the line with given parent and offset
+  "Insert the node itself to the line with given parent and offset. If node
+is expanded, insert its children in a sorted way"
   (let ((new-line 
          (vector-push-extend (make-tree-entry :node node :parent-line parent-line :offset offset) (model-tree-entries *model*))))
   (when (node-expanded-p node)
-    ;; insert all children's contents, but with offset
-    (let ((children (diff-node-children node))
-          ;; increase the offset since it is a child
-          (new-offset (1+ offset)))
-      ;; iterate by index - index will be the relative line
-      (dotimes (index (length children))
-        (insert-node-contents (nth index children)
-                              new-offset
-                              new-line))))))
-    
-    
+    (let* ((contents (get-splitted-node-children node))
+           ;; contents is the list of 2 elements:
+           (nodes (car contents))     ; expandable entries - nodes
+           (leafs (cdr contents))     ; leafs - which doesn't have subleafs
+           (new-offset (1+ offset)))  ; increase the offset since it is a child
+      ;; auxulary function which iterates over the list of nodes
+      ;; and inserts them
+      (flet ((insert-contents (nds)
+               ;; iterate by index - index will be the relative line
+               (dotimes (index (length nds))
+                 (insert-node-contents (nth index nds)
+                                       new-offset
+                                       new-line))))
+        ;; first insert directories
+        (insert-contents nodes)
+        ;; next insert files
+        (insert-contents leafs))))))
 
 
 
