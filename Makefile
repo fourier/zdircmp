@@ -3,7 +3,7 @@
 SBCL = sbcl
 
 all:
-	$(SBCL) --noinform --load build.lisp
+	$(SBCL) --noinform --disable-debugger --load build.lisp
 
 clean:
 	@rm -rf *.fasl
