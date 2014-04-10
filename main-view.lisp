@@ -63,20 +63,20 @@ is the side of the cursor - 'ztree.model.node::left or 'ztree.model.node::right"
 
 (defmacro with-color (color &body body)
   `(let ((color-value
-         (case ,color
-           (:white '1)
-           (:red '2)
-           (:green '3)
-           (:blue '4)
-           (:yellow '5)
-           (:magenta '6)
-           (:cyan '7)
-           (:black-on-white '8)
-           (:red-on-white '9)
-           (:green-on-white '10)
-           (:blue-on-white '11)
-           (otherwise '1))))
-    (progn
+          (case ,color
+            (:white '1)
+            (:red '2)
+            (:green '3)
+            (:blue '4)
+            (:yellow '5)
+            (:magenta '6)
+            (:cyan '7)
+            (:black-on-white '8)
+            (:red-on-white '9)
+            (:green-on-white '10)
+            (:blue-on-white '11)
+            (otherwise '1))))
+     (progn
        (cl-ncurses:wattron (main-window-window *main-window*) (cl-ncurses:COLOR-PAIR color-value))
        ,@body
        (cl-ncurses:wattron (main-window-window *main-window*) (cl-ncurses:COLOR-PAIR 1)))))
@@ -138,6 +138,15 @@ is the side of the cursor - 'ztree.model.node::left or 'ztree.model.node::right"
   (refresh-view))
 
 
+(defun window-line-to-tree-line (window-line)
+  "Returns the line in the tree array by given WINDOW-LINE 0-based line in window."
+  (+ (main-window-start-line *main-window*) window-line))
+
+(defun tree-line-to-window-line (line)
+  "Returns line in window by given tree array line.
+May be negative or more than window size"
+  (- line (main-window-start-line *main-window*)))
+
 (defun get-new-position (number-of-lines start-line height tree-size)
   "Calculate the new start screen line by given NUMBER-OF-LINES to scroll,
 which may be negative, START-LINE - line number of the most upper visible line,
@@ -182,7 +191,7 @@ in the buffer"
             (refresh-view))))))
 
 
-  
+
 (defun process-key-pgup ()
   "PAGE UP key event handler - scrolls up 1 screen if possible"
   (scroll-lines (- (main-window-height *main-window*))))
@@ -194,7 +203,7 @@ in the buffer"
 (defun process-key-return ()
   "ENTER key event handler - opens/close directories"
   (let* ((cursor-pos (cursor-line (main-window-cursor *main-window*)))
-         (line (+ (main-window-start-line *main-window*) cursor-pos))
+         (line (window-line-to-tree-line cursor-pos))
          (expanded (node-expanded-p (tree-entry-node (tree-entry-at-line line)))))
     (toggle-expand-state-by-line line (not expanded))))
 
@@ -270,8 +279,9 @@ and redraws all data inside"
   (refresh-view))
 
 
-(defun print-entry-in-window (entry window-line)
-  (let* ((node (tree-entry-node entry))
+(defun print-entry-in-window (line)
+  (let* ((entry (tree-entry-at-line line))
+         (node (tree-entry-node entry))
          (offset (tree-entry-offset entry))
          (side (diff-node-side node))
          (short-name (if (or (eq side 'ztree.model.node::both)
@@ -281,25 +291,23 @@ and redraws all data inside"
          (expandable (diff-node-is-directory node))
          (expanded   (node-expanded-p node))
          (diff       (diff-node-different node))
-         (parent-window-line (- (tree-entry-parent-line entry)
-                                (main-window-start-line *main-window*))))
-    (when (< parent-window-line 0) (setf parent-window-line 0))
+         (parent-line (tree-entry-parent-line entry)))
     (if (eq side 'ztree.model.node::both)
         ;; insert left AND right labels
         (progn 
           (insert-single-entry short-name
                                expandable
                                expanded
-                               window-line
-                               parent-window-line
+                               line
+                               parent-line
                                offset
                                'ztree.model.node::left
                                diff)
           (insert-single-entry short-name
                                expandable
                                expanded
-                               window-line
-                               parent-window-line
+                               line
+                               parent-line
                                offset
                                'ztree.model.node::right
                                diff))
@@ -307,12 +315,12 @@ and redraws all data inside"
           (insert-single-entry short-name
                                expandable
                                expanded
-                               window-line
-                               parent-window-line
+                               line
+                               parent-line
                                offset
                                side
                                diff)
-          (insert-dummy-cursor-opposite-side window-line
+          (insert-dummy-cursor-opposite-side (1+ (tree-line-to-window-line line))
                                              offset
                                              side)))))
 
@@ -339,12 +347,12 @@ and redraws all data inside"
   (cond ((eq color :red) :red-on-white)
         ((eq color :blue) :blue-on-white)
         ((eq color :green) :green-on-white)
-          (t :black-on-white)))
-  
+        (t :black-on-white)))
+
 (defun insert-single-entry (short-name
                             expandable expanded
-                            window-line
-                            parent-window-line
+                            line
+                            parent-line
                             offset
                             side
                             diff)
@@ -360,9 +368,12 @@ and redraws all data inside"
          ;; shall be calculated by subtracting from the x-position
          (x-position (+ +left-offset+     ; 1) offset from window left side (to move out of border)
                         (* (1+ offset) 4) ; 2) 4 chars for possible [+], and 4 chars per offset
-                        ; 3) shift to the middle for the right-side nodes
+                                        ; 3) shift to the middle for the right-side nodes
                         (if (eq side 'ztree.model.node::right) (1+ middle) 0))) 
-         (win (main-window-window *main-window*)))
+         (win (main-window-window *main-window*))
+         (height (main-window-height *main-window*))
+         (window-line (1+ (tree-line-to-window-line line)))
+         (parent-window-line (tree-line-to-window-line parent-line)))
     (flet ((node-sign (exp x y)
              (let ((text (format nil "[~a]" (if exp "-" "+"))))
                (with-color :white
@@ -376,34 +387,52 @@ and redraws all data inside"
           ;; horizontal line is shorter for directories by the [+] string
           (setq line-length (- line-length 3))
           ;; for expandable nodes insert "[+/-]"
-          (node-sign expanded (- x-position 4) window-line))
+          ;; guard against out-of window
+          (when (and (> window-line 0)            ; don't draw on top border
+                     (< window-line (1- height))) ; don't draw on bottom border
+            (node-sign expanded (- x-position 4) window-line)))
         ;; if there is a space to draw
         (when (> offset 0)
           ;; draw horizontal line
-          (mvwhline win window-line line-start (char-code #\-) line-length)
+          ;; guard against out-of window
+          (when (and (> window-line 0)            ; don't draw on top border
+                     (< window-line (1- height))) ; don't draw on bottom border
+            (mvwhline win window-line line-start (char-code #\-) line-length))
           ;; draw vertical line
           ;; first draw the ` character in the bottom of vertical line
           ;; any other nodes below will overwrite it with "|" anyways
-          (mvwprintw win window-line (1- line-start) "`")
+          #|
+          (when (and (> window-line 0)            ; don't draw on top border
+                     (< window-line (1- height))) ; don't draw on bottom border
+            (mvwprintw win window-line (1- line-start) "`"))
+          |#
           ;; then draw a line, starting from the parent line, but don't forget
           ;; 1) the parent line index is 0-based (and it we need to shift it by 1
           ;; because of the border), and 2) we draw the line not from the parent
           ;; line, but from the line below the parent
-          (mvwvline win
-                    (+ parent-window-line 2)
-                    (1- line-start)
-                    (char-code #\|)
-                    ;; we draw from parent to current excluding parent and current
-                    ;; lines
-                    (- window-line parent-window-line 2))))
+          (let* ((start-line (if (< parent-window-line 0) 1 (+ 2 parent-window-line)))
+                 ;; we draw from parent to current excluding parent and current
+                 ;; lines
+                 (len (1+ (- window-line start-line)))
+                 (end-line (+ start-line len)))
+            (when (> end-line (- height 1))
+              (setf len (- len (- end-line height) 1)))
+            (mvwvline win
+                      start-line        ; y start position
+                      (1- line-start)   ; x position
+                      (char-code #\|)   ; character
+                      len))))           ; number of rows to draw
       ;; determine if the line is under the cursor
       (let ((color (color-for-diff diff)))
         (when (and (= (1- window-line)
                       (cursor-line (main-window-cursor *main-window*)))
                    (eq (cursor-side (main-window-cursor *main-window*)) side))
           (setf color (inverse-color color)))
-        (with-color color
-          (mvwprintw win window-line x-position short-name))))))
+        ;; guard against out-of window
+        (when (and (> window-line 0)            ; don't draw on top border
+                   (< window-line (1- height))) ; don't draw on bottom border
+          (with-color color
+            (mvwprintw win window-line x-position short-name)))))))
 
 
 (defun refresh-contents ()
@@ -411,20 +440,16 @@ and redraws all data inside"
   ;; refresh tree in memory
   (refresh-tree (main-window-node *main-window*))
   ;; draw vertical separator
-  (let* ((start-line (main-window-start-line *main-window*))
-         (middle (floor (/ (- (main-window-width *main-window*) 2) 2)))
-         (available-lines (- (tree-number-of-lines) start-line)))
+  (let* ((middle (floor (/ (- (main-window-width *main-window*) 2) 2))))
     (mvwvline (main-window-window *main-window*)
               1
               (1+ middle)
               (char-code #\|)
               (- (main-window-height *main-window*) 2))
     ;; draw all visible lines
-    (dotimes (line (min available-lines
-                        (- (main-window-height *main-window*) 2)))
-      (let* ((entry (tree-entry-at-line (+ start-line line))))
-             (print-entry-in-window entry (1+ line))
-             (wrefresh (main-window-window *main-window*))))))
+    (dotimes (line (tree-number-of-lines))
+      (print-entry-in-window line)))
+  (wrefresh (main-window-window *main-window*)))
 
 
 ;;; main-view.lisp ends here
