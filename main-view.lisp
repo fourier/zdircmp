@@ -401,11 +401,9 @@ and redraws all data inside"
           ;; draw vertical line
           ;; first draw the ` character in the bottom of vertical line
           ;; any other nodes below will overwrite it with "|" anyways
-          #|
           (when (and (> window-line 0)            ; don't draw on top border
                      (< window-line (1- height))) ; don't draw on bottom border
             (mvwprintw win window-line (1- line-start) "`"))
-          |#
           ;; then draw a line, starting from the parent line, but don't forget
           ;; 1) the parent line index is 0-based (and it we need to shift it by 1
           ;; because of the border), and 2) we draw the line not from the parent
@@ -413,7 +411,7 @@ and redraws all data inside"
           (let* ((start-line (if (< parent-window-line 0) 1 (+ 2 parent-window-line)))
                  ;; we draw from parent to current excluding parent and current
                  ;; lines
-                 (len (1+ (- window-line start-line)))
+                 (len (- window-line start-line))
                  (end-line (+ start-line len)))
             (when (> end-line (- height 1))
               (setf len (- len (- end-line height) 1)))
