@@ -23,7 +23,12 @@
 
 ;;; Code:
 (defpackage :ztree.view.main
-  (:use ::common-lisp :cl-ncurses :ztree.util :ztree.model.node :ztree.model.tree :ztree.constants)
+  (:use ::common-lisp :cl-ncurses
+        :ztree.util
+        :ztree.model.node
+        :ztree.model.tree
+        :ztree.constants
+        :ztree.ui.utils)
   ;; import message function from ztree.view.message for easy use of messages
   (:import-from :ztree.view.message :message)
   (:export :create-view
@@ -62,25 +67,8 @@ is the side of the cursor - 'ztree.model.node::left or 'ztree.model.node::right"
 
 
 (defmacro with-color (color &body body)
-  `(let ((color-value
-          (case ,color
-            (:white '1)
-            (:red '2)
-            (:green '3)
-            (:blue '4)
-            (:yellow '5)
-            (:magenta '6)
-            (:cyan '7)
-            (:black-on-white '8)
-            (:red-on-white '9)
-            (:green-on-white '10)
-            (:blue-on-white '11)
-            (otherwise '1))))
-     (progn
-       (cl-ncurses:wattron (main-window-window *main-window*) (cl-ncurses:COLOR-PAIR color-value))
-       ,@body
-       (cl-ncurses:wattron (main-window-window *main-window*) (cl-ncurses:COLOR-PAIR 1)))))
-
+  "Shortcut for with-color-win for currert window"
+  `(with-color-win (main-window-window *main-window*) ,color ,@body))
 
 (defun destroy-view ()
   "Clears and destroys the ncurses window"

@@ -5,9 +5,12 @@
   :licence "GPL"
   :depends-on (#:cl-ncurses #:cl-fad)
   :components ((:file "util")
-               (:file "constants")
-               (:file "message-view")
-               (:file "help-view")
+               (:file "constants"
+                      :depends-on ("util"))
+               (:file "utils-ui"
+                      :depends-on ("util"))
+               (:file "message-view" :depends-on ("utils-ui"))
+               (:file "help-view" :depends-on ("utils-ui"))
                (:file "model-node"
                       :depends-on ("util"))
                (:file "model-tree"
@@ -17,10 +20,13 @@
                                    "model-node"
                                    "model-tree"
                                    "constants"
+                                   "utils-ui"
                                    "message-view"))
                (:file "tui"
                       :depends-on ("constants"
+                                   "utils-ui"
                                    "message-view"
                                    "help-view"
                                    "main-view"
+                                   "utils-ui"
                                    "model-node"))))

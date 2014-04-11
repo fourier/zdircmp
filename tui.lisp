@@ -23,7 +23,7 @@
 
 ;;; Code:
 (defpackage :ztree.tui
-  (:use ::common-lisp :cl-ncurses :ztree.constants )
+  (:use ::common-lisp :cl-ncurses :ztree.constants :ztree.ui.utils)
   ;; import message function from ztree.view.message for easy use of messages
   (:import-from :ztree.view.message :message)
   (:export :start-tui))
@@ -45,56 +45,6 @@
 
 (defvar *help-window-visible* t)
 
-(defmacro with-ncurses (&body body)
-  "Macro to create a ncurses environment"
-  `(unwind-protect
-        (progn
-          (initscr)
-          (refresh)
-          ,@body)
-     (progn
-       (endwin))))
-
-;; (macroexpand-1 '(with-ncurses
-;;                  (keypad *stdscr* 1)
-;;                  ;; turn on color 
-;;                  (start-color)))
-
-
-(defmacro with-ncurses-win (win lines cols y x &body body )
-  "Macro to create and operate with the ncurses-window with border.
-Params: `win' is a window name,
-        `lines' number of lines of the window size,
-        `cols' number of columns of the window size,
-        `y',`x' - upper left-hand corner of the window
-        `body' a list of expressions to perform on `win'"
-  `(let ((,win (newwin ,lines ,cols ,y ,x)))
-     (unwind-protect
-          (progn
-            (box ,win 0 0)
-            (wrefresh ,win)
-            ,@body)
-       (progn
-         (wborder ,win 32 32 32 32 32 32 32 32)
-         (wrefresh ,win)
-         (delwin ,win)))))
-
-;; (macroexpand-1 '(with-ncurses-win main 20 20 1 2
-;;                  (wprintw main "test")))
-
-(defmacro with-ncurses-borderless-win (win lines cols y x &body body )
-  "Macro to create and operate with the ncurses-window without border.
-Params: `win' is a window name,
-        `lines' number of lines of the window size,
-        `cols' number of columns of the window size,
-        `y',`x' - upper left-hand corner of the window
-        `body' a list of expressions to perform on `win'"
-  `(let ((,win (newwin ,lines ,cols ,y ,x)))
-     (unwind-protect
-          (progn
-            ,@body)
-       (progn
-         (delwin ,win)))))
 
 (define-condition on-bad-screen-size (error)
   ((message :initarg :description :reader description)))
