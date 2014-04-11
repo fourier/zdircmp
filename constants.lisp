@@ -23,7 +23,7 @@
 
 ;;; Code:
 (defpackage :ztree.constants
-  (:use :common-lisp)
+  (:use :common-lisp :cl-ncurses)
   (:export :key-backspace-p))
 
 (in-package :ztree.constants)
@@ -63,6 +63,70 @@
                                (eq ch +KEY-BACKSPACE1+)
                                (eq ch +KEY-BACKSPACE2+)))
 
+;; define ACS_* macros
+(defmacro defacs (name char) `(defconstant ,name (+ cl-ncurses:a_altcharset
+                                                    (char-code ,char))))
+
+;; from ncurses.h
+;; ==========================================================
+;; VT100 symbols begin here
+(defacs ACS_ULCORNER  #\l) ; upper left corner 
+(defacs ACS_LLCORNER  #\m) ; lower left corner 
+(defacs ACS_URCORNER  #\k) ; upper right corner 
+(defacs ACS_LRCORNER  #\j) ; lower right corner 
+(defacs ACS_LTEE  #\t) ; tee pointing right 
+(defacs ACS_RTEE  #\u) ; tee pointing left 
+(defacs ACS_BTEE  #\v) ; tee pointing up 
+(defacs ACS_TTEE  #\w) ; tee pointing down 
+(defacs ACS_HLINE #\q) ; horizontal line 
+(defacs ACS_VLINE #\x) ; vertical line 
+(defacs ACS_PLUS  #\n) ; large plus or crossover 
+(defacs ACS_S1    #\o) ; scan line 1 
+(defacs ACS_S9    #\s) ; scan line 9 
+(defacs ACS_DIAMOND #\`) ; diamond 
+(defacs ACS_CKBOARD #\a) ; checker board (stipple) 
+(defacs ACS_DEGREE  #\f) ; degree symbol 
+(defacs ACS_PLMINUS #\g) ; plus/minus 
+(defacs ACS_BULLET  #\~) ; bullet 
+; Teletype 5410v1 symbols begin here 
+(defacs ACS_LARROW  #\,) ; arrow pointing left 
+(defacs ACS_RARROW  #\+) ; arrow pointing right 
+(defacs ACS_DARROW  #\.) ; arrow pointing down 
+(defacs ACS_UARROW  #\-) ; arrow pointing up 
+(defacs ACS_BOARD #\h) ; board of squares 
+(defacs ACS_LANTERN #\i) ; lantern symbol 
+(defacs ACS_BLOCK #\0) ; solid square block 
+
+
+;; These aren't documented, but a lot of System Vs have them anyway
+;; (you can spot pprryyzz{{||}} in a lot of AT&T terminfo strings).
+;; The ACS_names may not match AT&T's, our source didn't know them.
+
+(defacs ACS_S3    #\p) ; scan line 3 
+(defacs ACS_S7    #\r) ; scan line 7 
+(defacs ACS_LEQUAL  #\y) ; less/equal 
+(defacs ACS_GEQUAL  #\z) ; greater/equal 
+(defacs ACS_PI    #\{) ; Pi 
+(defacs ACS_NEQUAL  #\|) ; not equal 
+(defacs ACS_STERLING  #\}) ; UK pound sign 
+
+
+;; Line drawing ACS names are of the form ACS_trbl, where t is the top, r
+;; is the right, b is the bottom, and l is the left.  t, r, b, and l might
+;; be B (blank), S (single), D (double), or T (thick).  The subset defined
+;; here only uses B and S.
+
+(defconstant ACS_BSSB  ACS_ULCORNER)
+(defconstant ACS_SSBB  ACS_LLCORNER)
+(defconstant ACS_BBSS  ACS_URCORNER)
+(defconstant ACS_SBBS  ACS_LRCORNER)
+(defconstant ACS_SBSS  ACS_RTEE)
+(defconstant ACS_SSSB  ACS_LTEE)
+(defconstant ACS_SSBS  ACS_BTEE)
+(defconstant ACS_BSSS  ACS_TTEE)
+(defconstant ACS_BSBS  ACS_HLINE)
+(defconstant ACS_SBSB  ACS_VLINE)
+(defconstant ACS_SSSS  ACS_PLUS)
 
 ;; export all symbols from ztree.constants
 (let ((pack (find-package :ztree.constants)))

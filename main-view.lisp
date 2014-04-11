@@ -397,13 +397,13 @@ and redraws all data inside"
           ;; guard against out-of window
           (when (and (> window-line 0)            ; don't draw on top border
                      (< window-line (1- height))) ; don't draw on bottom border
-            (mvwhline win window-line line-start (char-code #\-) line-length))
+            (mvwhline win window-line line-start  ACS_HLINE line-length))
           ;; draw vertical line
           ;; first draw the ` character in the bottom of vertical line
           ;; any other nodes below will overwrite it with "|" anyways
           (when (and (> window-line 0)            ; don't draw on top border
                      (< window-line (1- height))) ; don't draw on bottom border
-            (mvwprintw win window-line (1- line-start) "`"))
+            (mvwhline win window-line (1- line-start) ACS_LLCORNER 1))
           ;; then draw a line, starting from the parent line, but don't forget
           ;; 1) the parent line index is 0-based (and it we need to shift it by 1
           ;; because of the border), and 2) we draw the line not from the parent
@@ -418,7 +418,7 @@ and redraws all data inside"
             (mvwvline win
                       start-line        ; y start position
                       (1- line-start)   ; x position
-                      (char-code #\|)   ; character
+                      ACS_VLINE         ; character
                       len))))           ; number of rows to draw
       ;; determine if the line is under the cursor
       (let ((color (color-for-diff diff)))
