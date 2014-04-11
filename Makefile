@@ -1,9 +1,21 @@
 # -*- Mode: makefile; -*-
 
-SBCL = sbcl
+SBCL = sbcl --noinform
 
-all:
-	$(SBCL) --noinform --disable-debugger --load build.lisp
+.PHONY: debug
+debug: all
+
+.PHONY: release
+release: SBCL += --non-interactive
+release: all
+
+.DEFAULT_GOAL := release
+
+SOURCES := $(wildcard *.lisp)
+BUILD_SRC = build.lisp
+
+all: $(SOURCES)
+	$(SBCL) --load $(BUILD_SRC)
 
 clean:
 	@rm -rf *.fasl

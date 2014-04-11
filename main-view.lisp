@@ -204,8 +204,20 @@ in the buffer"
   "ENTER key event handler - opens/close directories"
   (let* ((cursor-pos (cursor-line (main-window-cursor *main-window*)))
          (line (window-line-to-tree-line cursor-pos))
-         (expanded (node-expanded-p (tree-entry-node (tree-entry-at-line line)))))
-    (toggle-expand-state-by-line line (not expanded))))
+         (node (tree-entry-node (tree-entry-at-line line)))
+         (expanded (node-expanded-p node))
+         (node-is-file (not (diff-node-is-directory node))))
+    (if (and node-is-file
+             (eq (diff-node-side node) 'ztree.model.node::both))
+        (let ((left (diff-node-left-path node))
+              (right (diff-node-right-path node)))
+          ;(message (format nil "Comparing ~a and ~a" left right))
+          (def-prog-mode)
+          (endwin)
+          (asdf/run-program:run-program (list "vimdiff" left right) :ignore-error-status t :output :interactive)
+          (reset-prog-mode)
+          (refresh))
+        (toggle-expand-state-by-line line (not expanded)))))
 
 (defun process-key-tab ()
   "TAB key event handler - jump to the other side of the window"
