@@ -22,7 +22,7 @@
                                    "constants"
                                    "utils-ui"
                                    "message-view"))
-               (:file "tui"
+               (:file "main"
                       :depends-on ("constants"
                                    "utils-ui"
                                    "message-view"

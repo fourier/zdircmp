@@ -1,4 +1,4 @@
-;;; tui.cl --- Entry point to the user interface
+;;; main.lisp --- Entry point to the application
 
 ;; Copyright (C) 2014 Alexey Veretennikov
 ;;
@@ -19,16 +19,16 @@
 ;;
 ;;; Commentary:
 
-;; Text User Interface
+;; Main entry point to the application, including Text User Interface
 
 ;;; Code:
-(defpackage :ztree.tui
+(defpackage :ztree.main
   (:use ::common-lisp :cl-ncurses :ztree.constants :ztree.ui.utils)
   ;; import message function from ztree.view.message for easy use of messages
   (:import-from :ztree.view.message :message)
-  (:export :start-tui))
+  (:export :main))
 
-(in-package :ztree.tui)
+(in-package :ztree.main)
 
 ;; resolving conflict - the sb-ext already has the timeout function,
 ;; so shadowing importing one from the cl-ncurses package
@@ -136,7 +136,7 @@
   (format *error-output* "where path1 and path2 - paths to directories to compare~%")
   (sb-ext:quit))
 
-(defun start-tui ()
+(defun main ()
   (let ((cmdargs (command-line)))
     (if (< (length cmdargs) 3)
         (usage (car cmdargs))
@@ -175,7 +175,7 @@
                     (ztree.view.main:create-view 0 main-view-y *cols* main-view-height))
                   ;; create a model node
                   (ztree.view.main:set-model-node 
-                   (ztree.model.node::create-root-node "~/difftest/diff1" "~/difftest/diff2" :message-function 'message))
+                   (ztree.model.node::create-root-node (second cmdargs) (third cmdargs) :message-function 'message))
                   ;; keyboard input loop with ESC as an exit condition
                   (let ((key nil))
                     (loop while (setf key (getch)) do
