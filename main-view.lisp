@@ -87,21 +87,6 @@ is the side of the cursor - 'ztree.model.node::left or 'ztree.model.node::right"
   (setf (main-window-y *main-window*) y)
   (setf (main-window-width *main-window*) width)
   (setf (main-window-height *main-window*) height)
-  ;; create the color pairs
-  ;; create color pairs
-  ;; foregrounds
-  (cl-ncurses:init-pair 1 cl-ncurses:COLOR_WHITE cl-ncurses:COLOR_BLACK)
-  (cl-ncurses:init-pair 2 cl-ncurses:COLOR_RED cl-ncurses:COLOR_BLACK)
-  (cl-ncurses:init-pair 3 cl-ncurses:COLOR_GREEN cl-ncurses:COLOR_BLACK)
-  (cl-ncurses:init-pair 4 cl-ncurses:COLOR_BLUE cl-ncurses:COLOR_BLACK)
-  (cl-ncurses:init-pair 5 cl-ncurses:COLOR_YELLOW cl-ncurses:COLOR_BLACK)
-  (cl-ncurses:init-pair 6 cl-ncurses:COLOR_MAGENTA cl-ncurses:COLOR_BLACK)
-  (cl-ncurses:init-pair 7 cl-ncurses:COLOR_CYAN cl-ncurses:COLOR_BLACK)
-  ;; backgrounds
-  (cl-ncurses:init-pair 8 cl-ncurses:COLOR_BLACK cl-ncurses:COLOR_WHITE)
-  (cl-ncurses:init-pair 9 cl-ncurses:COLOR_RED cl-ncurses:COLOR_WHITE)
-  (cl-ncurses:init-pair 10 cl-ncurses:COLOR_GREEN cl-ncurses:COLOR_WHITE)
-  (cl-ncurses:init-pair 11 cl-ncurses:COLOR_BLUE cl-ncurses:COLOR_WHITE)
   (refresh-view))
 
 
@@ -403,7 +388,7 @@ and redraws all data inside"
           ;; any other nodes below will overwrite it with "|" anyways
           (when (and (> window-line 0)            ; don't draw on top border
                      (< window-line (1- height))) ; don't draw on bottom border
-            (mvwhline win window-line (1- line-start) ACS_LLCORNER 1))
+            (mvwaddch win window-line (1- line-start) ACS_LLCORNER))
           ;; then draw a line, starting from the parent line, but don't forget
           ;; 1) the parent line index is 0-based (and it we need to shift it by 1
           ;; because of the border), and 2) we draw the line not from the parent

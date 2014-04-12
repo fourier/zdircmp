@@ -79,12 +79,7 @@
 
 (defun toggle-help-view ()
   (setf *help-window-visible* (not *help-window-visible*))
-  (if *help-window-visible*
-      (let ((maxcols 0)
-            (maxrows 0))
-        (getmaxyx *stdscr* maxrows maxcols)
-        (ztree.view.help:create-view 0 0 maxcols +help-window-height+))
-    (ztree.view.help:destroy-view))
+  (ztree.view.help:show-view *help-window-visible*)
   (process-resize)
   (message (format nil "~a help window"
                    (if *help-window-visible* "Showing" "Hiding"))))
@@ -136,6 +131,7 @@
   (format *error-output* "where path1 and path2 - paths to directories to compare~%")
   (sb-ext:quit))
 
+
 (defun main ()
   (let ((cmdargs (command-line)))
     (if (< (length cmdargs) 3)
@@ -143,54 +139,56 @@
         (let ((left-path (second cmdargs))
               (right-path (third cmdargs)))
           (with-ncurses
-          ;; no caching of the input
-          (cbreak)
-          ;; turn on special keys 
-          (keypad *stdscr* 1)
-          ;; turn on color 
-          (start-color)
-          ;; turn off key echoing
-          (noecho)
-          ;; hide cursor
-          (curs-set 0)
-          ;; clear and refresh screen
-          (clear)
-          (refresh)
-          ;; get the screen dimensions
-          (let ((maxcols 0)
-                (maxrows 0))
-            (getmaxyx *stdscr* maxrows maxcols)
-            (handler-case
-                (progn
-                  ;; verify the screen size
-                  (assert-screen-sizes-ok maxcols maxrows)
-                  ;; create the messages window
-                  (ztree.view.message:create-view 0 (1- *lines*) *cols* 1)
-                  ;; create a help window if necessary
-                  (let ((main-view-height (1- *lines*))
-                        (main-view-y 0))
-                    (when *help-window-visible*
-                      (ztree.view.help:create-view 0 0
-                                                   *cols* +help-window-height+
-                                                   left-path
-                                                   right-path)
-                      (setf main-view-height (- main-view-height +help-window-height+))
-                      (setf main-view-y (+ main-view-y +help-window-height+)))
-                    ;; create the main window
-                    (ztree.view.main:create-view 0 main-view-y *cols* main-view-height))
-                  ;; create a model node
-                  (ztree.view.main:set-model-node 
-                   (ztree.model.node::create-root-node left-path right-path :message-function 'message))
-                  ;; keyboard input loop with ESC as an exit condition
-                  (let ((key nil))
-                    (loop while (setf key (getch)) do
-                         (handle-key key))))
+            ;; no caching of the input
+            (cbreak)
+            ;; turn on special keys 
+            (keypad *stdscr* 1)
+            ;; turn on color 
+            (start-color)
+            ;; initialize color pairs
+            (init-color-pairs)
+            ;; turn off key echoing
+            (noecho)
+            ;; hide cursor
+            (curs-set 0)
+            ;; clear and refresh screen
+            (clear)
+            (refresh)
+            ;; get the screen dimensions
+            (let ((maxcols 0)
+                  (maxrows 0))
+              (getmaxyx *stdscr* maxrows maxcols)
+              (handler-case
+                  (progn
+                    ;; verify the screen size
+                    (assert-screen-sizes-ok maxcols maxrows)
+                    ;; create the messages window
+                    (ztree.view.message:create-view 0 (1- *lines*) *cols* 1)
+                    ;; create a help window if necessary
+                    (let ((main-view-height (1- *lines*))
+                          (main-view-y 0))
+                      (when *help-window-visible*
+                        (ztree.view.help:create-view 0 0
+                                                     *cols* +help-window-height+
+                                                     left-path
+                                                     right-path)
+                        (setf main-view-height (- main-view-height +help-window-height+))
+                        (setf main-view-y (+ main-view-y +help-window-height+)))
+                      ;; create the main window
+                      (ztree.view.main:create-view 0 main-view-y *cols* main-view-height))
+                    ;; create a model node
+                    (ztree.view.main:set-model-node 
+                     (ztree.model.node::create-root-node left-path right-path :message-function 'message))
+                    ;; keyboard input loop with ESC as an exit condition
+                    (let ((key nil))
+                      (loop while (setf key (getch)) do
+                           (handle-key key))))
 
-              ;; error handling: wrong screen size
-              (on-bad-screen-size (what) (format *error-output* (description what)))
-              (on-exit-command (command) (message "Exiting...")))))
-          ;; destroy windows
-          (ztree.view.help:destroy-view)
-          (ztree.view.message:destroy-view)
-          (ztree.view.main:destroy-view)))))
+                ;; error handling: wrong screen size
+                (on-bad-screen-size (what) (format *error-output* (description what)))
+                (on-exit-command (command) (message "Exiting..."))))
+            ;; destroy windows
+            (ztree.view.help:destroy-view)
+            (ztree.view.message:destroy-view)
+            (ztree.view.main:destroy-view))))))
 

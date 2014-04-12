@@ -169,5 +169,23 @@ Params: `win' is a window name,
        (cl-ncurses:wattron ,win (cl-ncurses:COLOR-PAIR 1)))))
 
 
+(defun-export init-color-pairs ()
+  ;; create the color pairs
+  ;; create color pairs
+  ;; foregrounds
+  (cl-ncurses:init-pair 1 cl-ncurses:COLOR_WHITE cl-ncurses:COLOR_BLACK)
+  (cl-ncurses:init-pair 2 cl-ncurses:COLOR_RED cl-ncurses:COLOR_BLACK)
+  (cl-ncurses:init-pair 3 cl-ncurses:COLOR_GREEN cl-ncurses:COLOR_BLACK)
+  (cl-ncurses:init-pair 4 cl-ncurses:COLOR_BLUE cl-ncurses:COLOR_BLACK)
+  (cl-ncurses:init-pair 5 cl-ncurses:COLOR_YELLOW cl-ncurses:COLOR_BLACK)
+  (cl-ncurses:init-pair 6 cl-ncurses:COLOR_MAGENTA cl-ncurses:COLOR_BLACK)
+  (cl-ncurses:init-pair 7 cl-ncurses:COLOR_CYAN cl-ncurses:COLOR_BLACK)
+  ;; backgrounds
+  (cl-ncurses:init-pair 8 cl-ncurses:COLOR_BLACK cl-ncurses:COLOR_WHITE)
+  (cl-ncurses:init-pair 9 cl-ncurses:COLOR_RED cl-ncurses:COLOR_WHITE)
+  (cl-ncurses:init-pair 10 cl-ncurses:COLOR_GREEN cl-ncurses:COLOR_WHITE)
+  (cl-ncurses:init-pair 11 cl-ncurses:COLOR_BLUE cl-ncurses:COLOR_WHITE))
+
+
 
 ;;; utils-ui.lisp ends here
