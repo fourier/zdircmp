@@ -34,27 +34,48 @@
 (shadowing-import 'timeout)
 (use-package 'cl-ncurses)
 
-
 (defvar *help-window* nil
   "Help window")
 
+(defstruct help-window
+  (window nil)
+  (x 0)
+  (y 0)
+  (width 0)
+  (height 0)
+  (left-path nil)
+  (right-path nil))
+
+
 (defun destroy-view ()
   (when *help-window*
-    (delwin *help-window*)
+    (let ((nwin (help-window-window *help-window*)))
+      (when nwin
+        (wclear nwin)
+        (wrefresh nwin)
+        (delwin nwin)))
     (setf *help-window* nil)))
 
-(defun create-view (x y width height)
+(defun create-view (x y width height left-path right-path)
   (destroy-view)
-  (setf *help-window* (newwin height width y x))
-  (wrefresh *help-window*))
+  (setf *help-window* (make-help-window :window (newwin height width y x)
+                                        :x x
+                                        :y y
+                                        :height height
+                                        :width width
+                                        :left-path left-path
+                                        :right-path right-path))
+  (wrefresh (help-window-window *help-window*)))
 
 (defun refresh-view ())
 
 (defun resize-view (x y width height)
-  (wclear *help-window*)
-  (wresize *help-window* height width)
-  (mvwin *help-window* y x)
-  (refresh-view))
+  (when *help-window*
+    (let ((nwin (help-window-window *help-window*)))
+      (wclear nwin)
+      (wresize nwin height width)
+      (mvwin nwin y x)
+      (refresh-view))))
 
 
 

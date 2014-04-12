@@ -140,7 +140,9 @@
   (let ((cmdargs (command-line)))
     (if (< (length cmdargs) 3)
         (usage (car cmdargs))
-        (with-ncurses
+        (let ((left-path (second cmdargs))
+              (right-path (third cmdargs)))
+          (with-ncurses
           ;; no caching of the input
           (cbreak)
           ;; turn on special keys 
@@ -168,14 +170,17 @@
                   (let ((main-view-height (1- *lines*))
                         (main-view-y 0))
                     (when *help-window-visible*
-                      (ztree.view.help:create-view 0 0 *cols* +help-window-height+)
+                      (ztree.view.help:create-view 0 0
+                                                   *cols* +help-window-height+
+                                                   left-path
+                                                   right-path)
                       (setf main-view-height (- main-view-height +help-window-height+))
                       (setf main-view-y (+ main-view-y +help-window-height+)))
                     ;; create the main window
                     (ztree.view.main:create-view 0 main-view-y *cols* main-view-height))
                   ;; create a model node
                   (ztree.view.main:set-model-node 
-                   (ztree.model.node::create-root-node (second cmdargs) (third cmdargs) :message-function 'message))
+                   (ztree.model.node::create-root-node left-path right-path :message-function 'message))
                   ;; keyboard input loop with ESC as an exit condition
                   (let ((key nil))
                     (loop while (setf key (getch)) do
@@ -183,7 +188,7 @@
 
               ;; error handling: wrong screen size
               (on-bad-screen-size (what) (format *error-output* (description what)))
-              (on-exit-command (command) (message "Exiting..."))))
+              (on-exit-command (command) (message "Exiting...")))))
           ;; destroy windows
           (ztree.view.help:destroy-view)
           (ztree.view.message:destroy-view)
