@@ -40,10 +40,10 @@
 (defconstant +min-screen-height+ 15
   "Minimum supported screen height")
 
-(defconstant +help-window-height+ 5
+(defconstant +head-window-height+ 3
   "Height of the help window")
 
-(defvar *help-window-visible* t)
+(defvar *head-window-visible* t)
 
 
 (define-condition on-bad-screen-size (error)
@@ -69,20 +69,20 @@
     (ztree.view.message:resize-view 0 (1- maxrows) maxcols 1)
     (let ((main-view-height (1- maxrows))
           (main-view-y 0))
-      (when *help-window-visible*
-        (ztree.view.help:resize-view 0 0 maxcols +help-window-height+)
-        (setf main-view-height (- main-view-height +help-window-height+))
-        (setf main-view-y (+ main-view-y +help-window-height+)))
+      (when *head-window-visible*
+        (ztree.view.help:resize-view 0 0 maxcols +head-window-height+)
+        (setf main-view-height (- main-view-height +head-window-height+))
+        (setf main-view-y (+ main-view-y +head-window-height+)))
       ;; create the main window
       (ztree.view.main:resize-view 0 main-view-y maxcols main-view-height))))
 
 
-(defun toggle-help-view ()
-  (setf *help-window-visible* (not *help-window-visible*))
-  (ztree.view.help:show-view *help-window-visible*)
+(defun toggle-head-view ()
+  (setf *head-window-visible* (not *head-window-visible*))
+  (ztree.view.help:show-view *head-window-visible*)
   (process-resize)
-  (message (format nil "~a help window"
-                   (if *help-window-visible* "Showing" "Hiding"))))
+  (message (format nil "~a heading window"
+                   (if *head-window-visible* "Showing" "Hiding"))))
 
 
 (defun handle-key (key)
@@ -90,7 +90,7 @@
   (cond ((eq key +KEY-ESC+)
          (signal 'on-exit-command :text "exit"))
         ((eq key +KEY-F1+)
-         (toggle-help-view))
+         (toggle-head-view))
         ((eq key +KEY-F2+) 
          (message "F2"))
         ((eq key +KEY-F3+) 
@@ -167,13 +167,13 @@
                     ;; create a help window if necessary
                     (let ((main-view-height (1- *lines*))
                           (main-view-y 0))
-                      (when *help-window-visible*
+                      (when *head-window-visible*
                         (ztree.view.help:create-view 0 0
-                                                     *cols* +help-window-height+
+                                                     *cols* +head-window-height+
                                                      left-path
                                                      right-path)
-                        (setf main-view-height (- main-view-height +help-window-height+))
-                        (setf main-view-y (+ main-view-y +help-window-height+)))
+                        (setf main-view-height (- main-view-height +head-window-height+))
+                        (setf main-view-y (+ main-view-y +head-window-height+)))
                       ;; create the main window
                       (ztree.view.main:create-view 0 main-view-y *cols* main-view-height))
                     ;; create a model node

@@ -1,4 +1,4 @@
-;;; help-view.lisp --- Help text view (window) for directory trees
+;;; head-view.lisp --- Help text view (window) for directory trees
 
 ;; Copyright (C) 2014 Alexey Veretennikov
 ;;
@@ -37,13 +37,13 @@
 
 (defmacro with-color (color &body body)
   "Shortcut for with-color-win for currert window"
-  `(with-color-win (main-window-window *help-window*) ,color ,@body))
+  `(with-color-win (main-window-window *head-window*) ,color ,@body))
 
 
-(defvar *help-window* nil
+(defvar *head-window* nil
   "Help window")
 
-(defstruct help-window
+(defstruct head-window
   (window nil)
   (x 0)
   (y 0)
@@ -54,17 +54,17 @@
 
 
 (defun destroy-view ()
-  (when *help-window*
-    (let ((nwin (help-window-window *help-window*)))
+  (when *head-window*
+    (let ((nwin (head-window-window *head-window*)))
       (when nwin
         (wclear nwin)
         (wrefresh nwin)
         (delwin nwin)))
-    (setf *help-window* nil)))
+    (setf *head-window* nil)))
 
 (defun create-view (x y width height left-path right-path)
   (destroy-view)
-  (setf *help-window* (make-help-window :window (newwin height width y x)
+  (setf *head-window* (make-head-window :window (newwin height width y x)
                                         :x x
                                         :y y
                                         :height height
@@ -75,50 +75,41 @@
 
 
 (defun refresh-view ()
-  (let ((nwin (help-window-window *help-window*)))
+  (let ((nwin (head-window-window *head-window*)))
     (when nwin 
       (wclear nwin)
-      (when t;(and (help-window-left-path *help-window*)
-            ;     (help-window-right-path *help-window*))
-        (mvwprintw nwin 0 0 "Directory tree differences report")
-        (mvwprintw nwin 1 0 (concat "Left:  " (help-window-left-path *help-window*)))
-        (mvwprintw nwin 2 0 (concat "Right: " (help-window-right-path *help-window*))))
-      (wrefresh nwin))))
+      (mvwprintw nwin 0 0 "Directory tree differences report")
+      (mvwprintw nwin 1 0 (concat "Left:  " (head-window-left-path *head-window*)))
+      (mvwprintw nwin 2 0 (concat "Right: " (head-window-right-path *head-window*))))
+    (wrefresh nwin)))
 
 (defun resize-view (x y width height)
-  (when *help-window*
-    (let ((nwin (help-window-window *help-window*)))
+  (when *head-window*
+    (let ((nwin (head-window-window *head-window*)))
       (wclear nwin)
       (wresize nwin height width)
       (mvwin nwin y x)
-      (setf (help-window-x *help-window*) x)
-      (setf (help-window-y *help-window*) y)
-      (setf (help-window-width *help-window*) width)
-      (setf (help-window-height *help-window*) height)
+      (setf (head-window-x *head-window*) x)
+      (setf (head-window-y *head-window*) y)
+      (setf (head-window-width *head-window*) width)
+      (setf (head-window-height *head-window*) height)
       (refresh-view))))
 
 (defun show-view (show)
-  (let ((nwin (help-window-window *help-window*)))
-    (if show
-        (progn
-          (when nwin
-            (wclear nwin)
-            (wrefresh nwin)
-            (delwin nwin))
-          (setf (help-window-window *help-window*) 
-                (newwin (help-window-height *help-window*)
-                        (help-window-width *help-window*)
-                        (help-window-y *help-window*)
-                        (help-window-x *help-window*))))
-        (progn
-          (when nwin
-            (wclear nwin)
-            (wrefresh nwin)
-            (delwin nwin))
-          (setf (help-window-window *help-window*) nil))))
-  (refresh-view))
+  (let ((nwin (head-window-window *head-window*)))
+    (when nwin
+      (wclear nwin)
+      (wrefresh nwin)
+      (delwin nwin))
+    (setf (head-window-window *head-window*) 
+          (if show (newwin (head-window-height *head-window*)
+                           (head-window-width *head-window*)
+                           (head-window-y *head-window*)
+                           (head-window-x *head-window*))
+              nil))
+    (refresh-view)))
 
-  
-  
 
-;;; help-view.lisp ends here
+
+
+;;; head-view.lisp ends here
