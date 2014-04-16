@@ -28,7 +28,8 @@
         :ztree.model.node
         :ztree.model.tree
         :ztree.constants
-        :ztree.ui.utils)
+        :ztree.ui.utils
+        :ztree.ui.command)
   ;; import message function from ztree.view.message for easy use of messages
   (:import-from :ztree.view.message :message)
   (:export :create-view
@@ -51,6 +52,7 @@ is the side of the cursor - 'ztree.model.node::left or 'ztree.model.node::right"
   (line 0)
   (side 'ztree.model.node::left))
 
+ 
 (defstruct main-window
   (window nil)
   (x 0)
@@ -59,16 +61,32 @@ is the side of the cursor - 'ztree.model.node::left or 'ztree.model.node::right"
   (height 0)
   (node nil)
   (start-line 0)
-  (cursor (make-cursor)))
+  (cursor (make-cursor))
+  (command (make-instance 'user-command)))
 
 
 (defvar *main-window* (make-main-window)
   "Main ncurses window")
 
-
 (defmacro with-color (color &body body)
   "Shortcut for with-color-win for currert window"
   `(with-color-win (main-window-window *main-window*) ,color ,@body))
+
+(defmacro defcommand (name &body body)
+  "Declares the command function. Usage example:
+`(defcommand up (let ((a 1)) a))
+generates the function
+`(DEFUN PROCESS-UP ()
+  (SET-LAST-COMMAND 'UP (MAIN-WINDOW-COMMAND *MAIN-WINDOW*))
+  (LET ((A 1))
+    A))"
+  (let ((command-fun-name (intern
+                           (string-upcase
+                           (concatenate 'string "process-" (symbol-name name))))))
+  `(defun ,command-fun-name ()
+     (set-last-command (quote ,name) (main-window-command *main-window*))
+     ,@body)))
+
 
 (defun destroy-view ()
   "Clears and destroys the ncurses window"
@@ -120,6 +138,11 @@ is the side of the cursor - 'ztree.model.node::left or 'ztree.model.node::right"
 May be negative or more than window size"
   (- line (main-window-start-line *main-window*)))
 
+(defun line-number-at-pos ()
+  (let* ((cursor-pos (cursor-line (main-window-cursor *main-window*)))
+         (line (window-line-to-tree-line cursor-pos)))
+    line))
+
 (defun get-new-position (number-of-lines start-line height tree-size)
   "Calculate the new start screen line by given NUMBER-OF-LINES to scroll,
 which may be negative, START-LINE - line number of the most upper visible line,
@@ -139,8 +162,8 @@ in the buffer"
     (setf (main-window-start-line *main-window*) new-position)
     (refresh-view)))
 
-(defun process-key-up ()
-  "UP key event handler - move cursor up one line"
+;; UP key event handler - move cursor up one line
+(defcommand up
   (let ((cursor-pos (cursor-line (main-window-cursor *main-window*))))
     ;; if the cursor is not on the first line, just move it up
     (if (> cursor-pos 0)
@@ -150,8 +173,8 @@ in the buffer"
         ;; otherwise - cursor is on the same place, but window moves up
         (scroll-lines -1))))
 
-(defun process-key-down ()
-  "DOWN key event handler - move cursor down one line"
+;; DOWN key event handler - move cursor down one line
+(defcommand down
   (let ((cursor-pos (cursor-line (main-window-cursor *main-window*))))
     (when (/= (+ (main-window-start-line *main-window*) cursor-pos)
               (1- (tree-number-of-lines)))
@@ -163,20 +186,17 @@ in the buffer"
             (setf (cursor-line (main-window-cursor *main-window*)) (1+ cursor-pos))
             (refresh-view))))))
 
-
-
-(defun process-key-pgup ()
-  "PAGE UP key event handler - scrolls up 1 screen if possible"
+;; PAGE UP key event handler - scrolls up 1 screen if possible
+(defcommand pgup
   (scroll-lines (- (main-window-height *main-window*))))
 
-(defun process-key-pgdn ()
-  "PAGE DOWN key event handler - scrolls down 1 screen if possible"
+;; PAGE DOWN key event handler - scrolls down 1 screen if possible"
+(defcommand pgdn
   (scroll-lines (main-window-height *main-window*)))
 
-(defun process-key-return ()
-  "ENTER key event handler - opens/close directories"
-  (let* ((cursor-pos (cursor-line (main-window-cursor *main-window*)))
-         (line (window-line-to-tree-line cursor-pos))
+;; ENTER key event handler - opens/close directories"
+(defcommand return
+  (let* ((line (line-number-at-pos))
          (node (tree-entry-node (tree-entry-at-line line)))
          (expanded (node-expanded-p node))
          (node-is-file (not (diff-node-is-directory node))))
@@ -192,8 +212,8 @@ in the buffer"
           (refresh))
         (toggle-expand-state-by-line line (not expanded)))))
 
-(defun process-key-tab ()
-  "TAB key event handler - jump to the other side of the window"
+;; TAB key event handler - jump to the other side of the window"
+(defcommand tab
   (let ((side (cursor-side (main-window-cursor *main-window*))))
     (if (eq side 'ztree.model.node::left)
         (setf (cursor-side (main-window-cursor *main-window*))
@@ -202,18 +222,36 @@ in the buffer"
               'ztree.model.node::left))
     (refresh-view)))
 
+;; Action on Backspace key: to jump to the line of a parent node or
+;; if previous key was Backspace - close the node
+(defcommand backspace
+  (let* ((line (line-number-at-pos))
+         (entry (tree-entry-at-line line))
+         (parent-line (tree-entry-parent-line entry)))
+    (when (/= parent-line line) nil)))
+      ;;   (if (and (equal last-command 'ztree-move-up-in-tree)
+      ;;            (not ztree-count-subsequent-bs))
+      ;;       (let ((node (ztree-find-node-in-line line)))
+      ;;         (when (ztree-is-expanded-node node)
+      ;;           (ztree-toggle-expand-state node))
+      ;;         (setq ztree-count-subsequent-bs t)
+      ;;         (ztree-refresh-buffer line))
+      ;;     (progn (setq ztree-count-subsequent-bs nil)
+      ;;            (scroll-to-line parent)))))))
+  
+
 (defun process-key (key)
   "Keypress dispatcher"
   (cond ((eq key +KEY-UP+)
-         (process-key-up))
+         (process-up))
         ((eq key +KEY-DOWN+)
-         (process-key-down))
+         (process-down))
         ((eq key +KEY-LEFT+) 
          (message "LEFT"))
         ((eq key +KEY-RIGHT+) 
          (message "RIGHT"))
         ((eq key +KEY-ENTER+) 
-         (process-key-return))
+         (process-return))
         ((eq key +KEY-SPACE+) 
          (message "SPACE"))
         ((key-backspace-p key)
@@ -223,11 +261,11 @@ in the buffer"
         ((eq key +KEY-END+) 
          (message "END"))
         ((eq key +KEY-TAB+) 
-         (process-key-tab))
+         (process-tab))
         ((eq key +KEY-NPAGE+) 
-         (process-key-pgdn))
+         (process-pgdn))
         ((eq key +KEY-PPAGE+)
-         (process-key-pgup))
+         (process-pgup))
         ((eq key +KEY-F1+) 
          (message "F1"))
         ((eq key +KEY-F2+) 

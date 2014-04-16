@@ -5,6 +5,7 @@
   :licence "GPL"
   :depends-on (#:cl-ncurses #:cl-fad)
   :components ((:file "util")
+               (:file "command-ui")
                (:file "constants"
                       :depends-on ("util"))
                (:file "utils-ui"
@@ -17,6 +18,7 @@
                       :depends-on ("util" "model-node"))
                (:file "main-view"
                       :depends-on ("util"
+                                   "command-ui"
                                    "model-node"
                                    "model-tree"
                                    "constants"
