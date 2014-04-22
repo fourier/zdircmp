@@ -52,12 +52,17 @@
   (setf *message-window* (newwin height width y x))
   (wrefresh *message-window*))
 
-(defun message (str)
-  (when *message-window*
-    (wclear *message-window*)
-    (mvwprintw *message-window*  0 0 str)
-    (setf *last-message* str)
-    (wrefresh *message-window*)))
+
+(defun message (str &rest arguments)
+  (let ((msg 
+         (if arguments
+             (apply #'format nil str arguments)
+             str)))
+    (when *message-window*
+      (wclear *message-window*)
+      (mvwprintw *message-window* 0 0 msg)
+      (setf *last-message* msg)
+      (wrefresh *message-window*))))
 
 
 (defun refresh-view ()

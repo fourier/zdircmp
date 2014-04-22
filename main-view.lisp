@@ -84,8 +84,8 @@ generates the function
                            (string-upcase
                            (concatenate 'string "process-" (symbol-name name))))))
   `(defun ,command-fun-name ()
-     (set-last-command (quote ,name) (main-window-command *main-window*))
-     ,@body)))
+     ,@body
+     (set-last-command (quote ,name) (main-window-command *main-window*)))))
 
 
 (defun destroy-view ()
@@ -143,6 +143,13 @@ May be negative or more than window size"
          (line (window-line-to-tree-line cursor-pos)))
     line))
 
+(defun line-visible-p (line)
+  "Returns t if the tree-line is visible in the current screen"
+  (let ((window-line (tree-line-to-window-line line))
+        (max-line (1- (main-window-height *main-window*))))
+    (and (>= window-line 0)
+         (< window-line max-line))))
+
 (defun get-new-position (number-of-lines start-line height tree-size)
   "Calculate the new start screen line by given NUMBER-OF-LINES to scroll,
 which may be negative, START-LINE - line number of the most upper visible line,
@@ -161,6 +168,26 @@ in the buffer"
                                         (tree-number-of-lines))))
     (setf (main-window-start-line *main-window*) new-position)
     (refresh-view)))
+
+(defun scroll-to-line (line)
+  "Set the cursor to the LINE, line is the line in tree(buffer),
+not a screen line. If the line is visible (on screen), just set cursor to
+this line, otherwise:
+1. If the line is above the screen, set the line as a first line in
+the screen
+2. If the line is below the screen, set is as high as possible"
+  ;; if line is visible set the cursor to this line
+  (if (line-visible-p line)
+      (setf (cursor-line (main-window-cursor *main-window*))
+            (tree-line-to-window-line line))
+      ;; otherwise scroll to the number of lines - works only
+      ;; for scroll up for now. TODO: fix it for scroll down - case 2
+      (let ((window-line (tree-line-to-window-line line)))
+        (scroll-lines window-line)
+        (setf window-line (tree-line-to-window-line line))
+        (setf (cursor-line (main-window-cursor *main-window*))
+              (tree-line-to-window-line line))))
+  (refresh-view))
 
 ;; UP key event handler - move cursor up one line
 (defcommand up
@@ -204,7 +231,7 @@ in the buffer"
              (eq (diff-node-side node) 'ztree.model.node::both))
         (let ((left (diff-node-left-path node))
               (right (diff-node-right-path node)))
-          ;(message (format nil "Comparing ~a and ~a" left right))
+          ;(message  "Comparing ~a and ~a" left right)
           (def-prog-mode)
           (endwin)
           (asdf/run-program:run-program (list "vimdiff" left right) :ignore-error-status t :output :interactive)
@@ -228,18 +255,14 @@ in the buffer"
   (let* ((line (line-number-at-pos))
          (entry (tree-entry-at-line line))
          (parent-line (tree-entry-parent-line entry)))
-    (message (format nil "last-command ~a repeat ~a line ~d parent-line ~d"
-                     (last-command (main-window-command *main-window*))
-                     (repeat-count (main-window-command *main-window*))
-                     line
-                     parent-line))
-    (when (/= parent-line line) 
+    ;; perform action on any node except the root node
+    (when (/= parent-line line)
+      ;; if it was 2 subsequent backspace commands - close the current node
       (if (and (equal (last-command (main-window-command *main-window*))
                                     'backspace)
-               (= 1 (mod (repeat-count (main-window-command *main-window*)) 2)))
-          (toggle-expand-state-by-line line nil)
-          (scroll-lines (- parent-line line)))))
-  ;;            (scroll-to-line parent-line))))
+               (= 0 (mod (repeat-count (main-window-command *main-window*)) 2)))
+            (toggle-expand-state-by-line line nil)
+            (scroll-to-line parent-line))))
   (refresh-view))
 
   
@@ -295,7 +318,7 @@ in the buffer"
         ((eq key +KEY-F12+) 
          (message "F12"))
         (t
-         (message (format nil "Pressed: ~a" key))))
+         (message "Pressed: ~a" key)))
   (refresh-view))
 
 (defun set-model-node (node)

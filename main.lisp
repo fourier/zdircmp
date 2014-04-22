@@ -81,8 +81,8 @@
   (setf *head-window-visible* (not *head-window-visible*))
   (ztree.view.help:show-view *head-window-visible*)
   (process-resize)
-  (message (format nil "~a heading window"
-                   (if *head-window-visible* "Showing" "Hiding"))))
+  (message "~a heading window"
+           (if *head-window-visible* "Showing" "Hiding")))
 
 
 (defun handle-key (key)
