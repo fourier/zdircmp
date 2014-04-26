@@ -237,7 +237,8 @@ the screen
           (asdf/run-program:run-program (list "vimdiff" left right) :ignore-error-status t :output :interactive)
           (reset-prog-mode)
           (refresh))
-        (toggle-expand-state-by-line line (not expanded)))))
+        (toggle-expand-state-by-line line (not expanded))))
+  (refresh-view))
 
 ;; TAB key event handler - jump to the other side of the window"
 (defcommand tab
@@ -318,8 +319,7 @@ the screen
         ((eq key +KEY-F12+) 
          (message "F12"))
         (t
-         (message "Pressed: ~a" key)))
-  (refresh-view))
+         (message "Pressed: ~a" key))))
 
 (defun set-model-node (node)
   "Sets the current root node of the model. Refreshes the window
