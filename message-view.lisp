@@ -27,7 +27,9 @@
   (:export :create-view
            :destroy-view
            :resize-view
-           :message))
+           :message
+           :show-activity
+           :update-activity))
 
 (require 'cl-ncurses)
 
@@ -41,6 +43,16 @@
 
 (defvar *last-message* nil
   "Last message shown in window")
+
+(defvar *activity-indicator-visible* nil
+  "Determine if we show the activity indicator")
+
+(defvar *activity-indicator-state* 0
+  "Activity indicator state, 0-7. Each state represents
+one of the following: [-] [\] [|] [/] [-] [\] [|] [/]")
+
+(defparameter +activity-statuses+ (vector "[-]" "[\\]" "[|]" "[/]" "[-]" "[\\]" "[|]" "[/]")
+  "possible statuses of the activity indicator")
 
 (defun destroy-view ()
   (when *message-window*
@@ -60,13 +72,19 @@
              str)))
     (when *message-window*
       (wclear *message-window*)
-      (mvwprintw *message-window* 0 0 msg)
+      (when *activity-indicator-visible*
+        (mvwprintw *message-window* 0 0
+                   (elt +activity-statuses+ *activity-indicator-state*)))
+      (mvwprintw *message-window* 0
+                 (if *activity-indicator-visible* 4 0)
+                 msg)
       (setf *last-message* msg)
       (wrefresh *message-window*))))
 
 
 (defun refresh-view ()
-  (message *last-message*))
+  (when *last-message*
+    (message *last-message*)))
 
 (defun resize-view (x y width height)
   (wclear *message-window*)
@@ -74,6 +92,19 @@
   (mvwin *message-window* y x)
   (refresh-view))
 
+
+(defun show-activity (show)
+  "Show the activity indicator if SHOW is t, hide otherwise"
+  (setf *activity-indicator-state* 0)
+  (setf *activity-indicator-visible* show)
+  (refresh-view))
+
+
+(defun update-activity ()
+  "Update the activity indicator if visible"
+  (when *activity-indicator-visible*
+    (setf *activity-indicator-state* (mod (1+ *activity-indicator-state*) 8))
+    (refresh-view)))
 
 
 ;;; message-view.lisp ends here

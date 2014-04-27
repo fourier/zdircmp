@@ -259,11 +259,7 @@ the screen
          (entry (tree-entry-at-line line))
          (parent-line (tree-entry-parent-line entry))
          (is-dir (diff-node-is-directory (tree-entry-node entry)))
-         (expanded (node-expanded-p (tree-entry-node entry)))
-         (two-subsequent-backspaces
-          (and (equal (last-command (main-window-command *main-window*))
-                      'backspace)
-               (= 0 (mod (repeat-count (main-window-command *main-window*)) 2)))))
+         (expanded (node-expanded-p (tree-entry-node entry))))
     ;; perform action on any node except the root node
     (when (/= parent-line line)
       (if (and is-dir

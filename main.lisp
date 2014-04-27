@@ -23,9 +23,7 @@
 
 ;;; Code:
 (defpackage :ztree.main
-  (:use ::common-lisp :cl-ncurses :ztree.constants :ztree.ui.utils)
-  ;; import message function from ztree.view.message for easy use of messages
-  (:import-from :ztree.view.message :message)
+  (:use ::common-lisp :cl-ncurses :ztree.constants :ztree.ui.utils :ztree.view.message)
   (:export :main))
 
 (in-package :ztree.main)
@@ -179,8 +177,12 @@
                       ;; create the main window
                       (ztree.view.main:create-view 0 main-view-y *cols* main-view-height))
                     ;; create a model node
+                    ;; start activity indicatior
+                    (show-activity t)
                     (ztree.view.main:set-model-node 
-                     (ztree.model.node::create-root-node left-path right-path :message-function 'message))
+                     (ztree.model.node::create-root-node left-path right-path :message-function 'message :activity-function 'update-activity))
+                    ;; stop activity indicatior
+                    (show-activity nil)
                     ;; keyboard input loop with ESC as an exit condition
                     (let ((key nil))
                       (loop while (setf key (getch)) do
@@ -194,3 +196,5 @@
             (ztree.view.message:destroy-view)
             (ztree.view.main:destroy-view))))))
 
+
+;;; main.lisp ends here

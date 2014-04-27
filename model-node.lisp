@@ -24,10 +24,7 @@
 ;;; Code:
 (defpackage :ztree.model.node
   (:use :common-lisp :ztree.util :cl-fad)
-  ;; import message function from ztree.view.message for easy use of messages
-  ;;(:import-from :ztree.view.message :message)
-  (:export :update-wait-message
-           :create-root-node
+  (:export :create-root-node
            ;; diff-node getters/setters
            :diff-node-parent
            :diff-node-left-path
@@ -54,17 +51,14 @@
 (defvar *message-fun* nil
   "Message function to report from model")
 
-(defvar wait-message nil
-  "Message showing while constructing the diff tree")
+(defvar *activity-fun* nil
+  "Activity function to report activity update from model")
 
 (defun message (str)
   (when *message-fun* (funcall *message-fun* str)))
 
-(defun update-wait-message ()
-  (when wait-message
-    (setq wait-message (concat wait-message "."))
-    (message wait-message)))
-
+(defun update-activity ()
+  (when *activity-fun* (funcall *activity-fun*)))
 
 
 ;; Create a struct diff-node with defined fielsd and getters/setters
@@ -224,7 +218,7 @@ the rest is the combined list of nodes"
         (list2 (directory-files path2))
         (different-dir nil)
         (result nil))
-    (update-wait-message)
+    (update-activity)
     ;; first - adding all entries from left directory
     (dolist (file1 list1)
       ;; for every entry in the first directory 
@@ -316,13 +310,15 @@ the rest is the combined list of nodes"
     ;; result is a pair: difference status and nodes list
     (cons different-dir result)))
 
-(defun create-root-node (dir1 dir2 &key (message-function nil))
+(defun create-root-node (dir1 dir2 &key (message-function nil)
+                                     (activity-function nil))
   (when (not (file-directory-p dir1))
     (error (format nil "Path ~a is not a directory" dir1)))
   (when (not (file-directory-p dir2))
     (error (format nil "Path ~a is not a directory" dir2)))
   (setf *message-fun* message-function)
-  (setq wait-message (concat "Comparing " dir1 " and " dir2 " ..."))
+  (setf *activity-fun* activity-function)
+  (message (concat "Comparing " dir1 " and " dir2 " ..."))
   (let* ((model 
           (make-diff-node
            :parent nil
@@ -339,8 +335,7 @@ the rest is the combined list of nodes"
     model))
 
 (defun diff-node-update (node)
-  (setq wait-message
-        (concat "Updating " (diff-node-short-name node) " ..."))
+  (message (concat "Updating " (diff-node-short-name node) " ..."))
   (let ((traverse (diff-node-traverse node
                                       (diff-node-left-path node)
                                       (diff-node-right-path node))))
