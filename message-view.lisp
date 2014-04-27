@@ -38,6 +38,15 @@
 
 (in-package :ztree.view.message)
 
+(defclass message-view (base-view)
+  ((last-message :accessor last-message
+                 :documentation "Last message")
+   (activity-indicator-visible :accessor activity-indicator-visible
+                               :documentation "Determine if we show the activity indicator")
+   (activity-indicator-state :initform 0 :accessor activity-indicator-state
+                             :documentation "Activity indicator state, 0-7. Each state represents
+one of the following: [-] [\] [|] [/] [-] [\] [|] [/]"))
+  (:documentation "1-line window for messages"))
 
 (defvar *message-window* nil
   "1-line window for messages")
