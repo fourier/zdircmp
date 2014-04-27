@@ -10,6 +10,11 @@ In order to build one need to have installed and available:
 * [SBCL](http://www.sbcl.org) - install through your package manager
 * [CL-FAD](http://weitz.de/cl-fad/) - install through [quicklisp](http://www.quicklisp.org)
 * [CL-NCURSES](http://common-lisp.net/project/cl-ncurses/) - install through [quicklisp](http://www.quicklisp.org)
+In order to run on Debian Stable i386, one need to perform the following under root:
+<pre>
+ln -s /lib/i386-linux-gnu/libncurses.so.5 /usr/local/lib/libncurses.so
+</pre>
+since the ***libncurses*** is not in the one of search paths in cl-ncurses.
 
 Build instructions
 ==================
