@@ -52,7 +52,7 @@ is the side of the cursor - 'ztree.model.node::left or 'ztree.model.node::right"
   (line 0)
   (side 'ztree.model.node::left))
 
- 
+
 (defstruct main-window
   (window nil)
   (x 0)
@@ -82,10 +82,10 @@ generates the function
     A))"
   (let ((command-fun-name (intern
                            (string-upcase
-                           (concatenate 'string "process-" (symbol-name name))))))
-  `(defun ,command-fun-name ()
-     ,@body
-     (set-last-command (quote ,name) (main-window-command *main-window*)))))
+                            (concatenate 'string "process-" (symbol-name name))))))
+    `(defun ,command-fun-name ()
+       ,@body
+       (set-last-command (quote ,name) (main-window-command *main-window*)))))
 
 
 (defun destroy-view ()
@@ -113,9 +113,11 @@ generates the function
   (when (main-window-window *main-window*)
     (wclear (main-window-window *main-window*))
     (box (main-window-window *main-window*) 0 0)
-    (wrefresh (main-window-window *main-window*))
-    (when (main-window-node *main-window*)
-      (refresh-contents))))
+    (if (main-window-node *main-window*)
+        (refresh-contents)
+        (wrefresh (main-window-window *main-window*)))))
+
+
 
 (defun resize-view (x y width height)
   (wclear (main-window-window *main-window*))
@@ -231,7 +233,7 @@ the screen
              (eq (diff-node-side node) 'ztree.model.node::both))
         (let ((left (diff-node-left-path node))
               (right (diff-node-right-path node)))
-          ;(message  "Comparing ~a and ~a" left right)
+                                        ;(message  "Comparing ~a and ~a" left right)
           (def-prog-mode)
           (endwin)
           (asdf/run-program:run-program (list "vimdiff" left right) :ignore-error-status t :output :interactive)
@@ -260,13 +262,13 @@ the screen
     (when (/= parent-line line)
       ;; if it was 2 subsequent backspace commands - close the current node
       (if (and (equal (last-command (main-window-command *main-window*))
-                                    'backspace)
+                      'backspace)
                (= 0 (mod (repeat-count (main-window-command *main-window*)) 2)))
-            (toggle-expand-state-by-line line nil)
-            (scroll-to-line parent-line))))
+          (toggle-expand-state-by-line line nil)
+          (scroll-to-line parent-line))))
   (refresh-view))
 
-  
+
 
 (defun process-key (key)
   "Keypress dispatcher"
