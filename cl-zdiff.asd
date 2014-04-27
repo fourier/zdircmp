@@ -10,7 +10,9 @@
                       :depends-on ("util"))
                (:file "utils-ui"
                       :depends-on ("util"))
-               (:file "message-view" :depends-on ("utils-ui"))
+               (:file "base-view"
+                      :depends-on ("utils-ui"))
+               (:file "message-view" :depends-on ("utils-ui" "base-view"))
                (:file "head-view" :depends-on ("util" "utils-ui"))
                (:file "model-node"
                       :depends-on ("util"))

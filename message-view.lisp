@@ -23,7 +23,9 @@
 
 ;;; Code:
 (defpackage :ztree.view.message
-  (:use ::common-lisp :cl-ncurses)
+  (:use ::common-lisp :cl-ncurses :ztree.view.base)
+  ;; shadowing refresh from cl-ncurses, we use the one in base-view
+  (:shadow :refresh)
   (:export :create-view
            :destroy-view
            :resize-view
@@ -35,8 +37,6 @@
 (require 'cl-ncurses)
 
 (in-package :ztree.view.message)
-
-(shadowing-import 'timeout)
 
 
 (defvar *message-window* nil
