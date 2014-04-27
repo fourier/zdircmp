@@ -253,21 +253,25 @@ the screen
     (refresh-view :do-refresh-model nil)))
 
 ;; Action on Backspace key: to jump to the line of a parent node or
-;; if previous key was Backspace - close the node
+;; if the node is directory and expanded - close it
 (defcommand backspace
   (let* ((line (line-number-at-pos))
          (entry (tree-entry-at-line line))
-         (parent-line (tree-entry-parent-line entry)))
+         (parent-line (tree-entry-parent-line entry))
+         (is-dir (diff-node-is-directory (tree-entry-node entry)))
+         (expanded (node-expanded-p (tree-entry-node entry)))
+         (two-subsequent-backspaces
+          (and (equal (last-command (main-window-command *main-window*))
+                      'backspace)
+               (= 0 (mod (repeat-count (main-window-command *main-window*)) 2)))))
     ;; perform action on any node except the root node
     (when (/= parent-line line)
-      ;; if it was 2 subsequent backspace commands - close the current node
-      (if (and (equal (last-command (main-window-command *main-window*))
-                      'backspace)
-               (= 0 (mod (repeat-count (main-window-command *main-window*)) 2)))
-          (toggle-expand-state-by-line line nil)
-          (scroll-to-line parent-line))))
-  (refresh-view))
-
+      (if (and is-dir
+               expanded)
+          (progn
+            (toggle-expand-state-by-line line nil)
+            (refresh-view))
+          (scroll-to-line parent-line)))))
 
 
 (defun process-key (key)
