@@ -27,6 +27,7 @@
   ;; shadowing refresh from cl-ncurses, we don't use it anyway
   (:shadow :refresh)
   (:export :view
+           :window
            :x
            :y
            :width

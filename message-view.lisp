@@ -38,8 +38,9 @@
 
 (in-package :ztree.view.message)
 
-(defclass message-view (base-view)
-  ((last-message :accessor last-message
+(defclass message-view (view)
+  ((last-message :initform nil
+                 :accessor last-message
                  :documentation "Last message")
    (activity-indicator-visible :accessor activity-indicator-visible
                                :documentation "Determine if we show the activity indicator")
@@ -49,31 +50,36 @@ one of the following: [-] [\] [|] [/] [-] [\] [|] [/]"))
   (:documentation "1-line window for messages"))
 
 (defvar *message-window* nil
-  "1-line window for messages")
+  "Singleton of the 1-line window for messages")
 
-(defvar *last-message* nil
-  "Last message shown in window")
-
-(defvar *activity-indicator-visible* nil
-  "Determine if we show the activity indicator")
-
-(defvar *activity-indicator-state* 0
-  "Activity indicator state, 0-7. Each state represents
-one of the following: [-] [\] [|] [/] [-] [\] [|] [/]")
 
 (defparameter +activity-statuses+ (vector "[-]" "[\\]" "[|]" "[/]" "[-]" "[\\]" "[|]" "[/]")
   "possible statuses of the activity indicator")
 
 (defun destroy-view ()
   (when *message-window*
-    (delwin *message-window*)
-    (setf *message-window* nil)))
+    (destroy *message-window*)))
 
 (defun create-view (x y width height)
   (destroy-view)
-  (setf *message-window* (newwin height width y x))
-  (wrefresh *message-window*))
+  (setf *message-window* (make-instance 'message-view
+                                        :x x
+                                        :y y
+                                        :width width
+                                        :height height)))
 
+(defmethod view-message ((v message-view) msg)
+  (let ((w (window v)))
+    (wclear w)
+    (when (activity-indicator-visible v)
+      (mvwprintw w 0 0
+                 (elt +activity-statuses+ (activity-indicator-state v))))
+    (mvwprintw w 0
+               (if (activity-indicator-visible v) 4 0)
+               msg)
+    (setf (last-message v) msg)
+    (wrefresh w)))
+  
 
 (defun message (str &rest arguments)
   (let ((msg 
@@ -81,41 +87,39 @@ one of the following: [-] [\] [|] [/] [-] [\] [|] [/]")
              (apply #'format nil str arguments)
              str)))
     (when *message-window*
-      (wclear *message-window*)
-      (when *activity-indicator-visible*
-        (mvwprintw *message-window* 0 0
-                   (elt +activity-statuses+ *activity-indicator-state*)))
-      (mvwprintw *message-window* 0
-                 (if *activity-indicator-visible* 4 0)
-                 msg)
-      (setf *last-message* msg)
-      (wrefresh *message-window*))))
+      (view-message *message-window* msg))))
 
 
-(defun refresh-view ()
-  (when *last-message*
-    (message *last-message*)))
-
+(defmethod refresh ((v message-view))
+  (when (last-message v)
+    (view-message v (last-message v))))
+  
 (defun resize-view (x y width height)
-  (wclear *message-window*)
-  (wresize *message-window* height width)
-  (mvwin *message-window* y x)
-  (refresh-view))
+  (when *message-window*
+    (resize *message-window* x y width height)))
 
+
+(defmethod view-show-activity ((v message-view) show)
+  (setf (activity-indicator-state v) 0)
+  (setf (activity-indicator-visible v) show)
+  (refresh v))
+  
 
 (defun show-activity (show)
   "Show the activity indicator if SHOW is t, hide otherwise"
-  (setf *activity-indicator-state* 0)
-  (setf *activity-indicator-visible* show)
-  (refresh-view))
+  (when *message-window*
+    (view-show-activity *message-window* show)))
 
+
+(defmethod view-update-activity ((v message-view))
+  (when (activity-indicator-visible v)
+    (setf (activity-indicator-state v) (mod (1+ (activity-indicator-state v)) 8))
+    (refresh v)))
 
 (defun update-activity ()
   "Update the activity indicator if visible"
-  (when *activity-indicator-visible*
-    (setf *activity-indicator-state* (mod (1+ *activity-indicator-state*) 8))
-    (refresh-view)))
-
+  (when *message-window*
+    (view-update-activity *message-window*)))
 
 (defmacro with-activity-indicator (&body body)
   "Turn on activity indicator, perform BODY and turn off activity indicator"
