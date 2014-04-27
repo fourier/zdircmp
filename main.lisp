@@ -131,6 +131,7 @@
   (format *error-output* "where path1 and path2 - paths to directories to compare~%")
   (sb-ext:quit))
 
+(ql:quickload :swank)
 
 (defun main ()
   (let ((cmdargs (command-line)))
@@ -138,6 +139,7 @@
         (usage (car cmdargs))
         (let ((left-path (second cmdargs))
               (right-path (third cmdargs)))
+          (swank:create-server :port 4006)
           (with-ncurses
             ;; no caching of the input
             (cbreak)

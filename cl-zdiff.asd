@@ -3,7 +3,7 @@
   :version "0.1"
   :author "Alexey Veretennikov <EMAIL-REDACTED>"
   :licence "GPL"
-  :depends-on (#:cl-ncurses #:cl-fad)
+  :depends-on (#:cl-ncurses #:cl-fad #:swank)
   :components ((:file "util")
                (:file "command-ui")
                (:file "constants"
