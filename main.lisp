@@ -177,12 +177,9 @@
                       ;; create the main window
                       (ztree.view.main:create-view 0 main-view-y *cols* main-view-height))
                     ;; create a model node
-                    ;; start activity indicatior
-                    (show-activity t)
-                    (ztree.view.main:set-model-node 
-                     (ztree.model.node::create-root-node left-path right-path :message-function 'message :activity-function 'update-activity))
-                    ;; stop activity indicatior
-                    (show-activity nil)
+                    (with-activity-indicator 
+                        (ztree.view.main:set-model-node 
+                         (ztree.model.node::create-root-node left-path right-path :message-function 'message :activity-function 'update-activity)))
                     ;; keyboard input loop with ESC as an exit condition
                     (let ((key nil))
                       (loop while (setf key (getch)) do

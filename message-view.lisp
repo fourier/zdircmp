@@ -29,6 +29,7 @@
            :resize-view
            :message
            :show-activity
+           :with-activity-indicator
            :update-activity))
 
 (require 'cl-ncurses)
@@ -106,5 +107,12 @@ one of the following: [-] [\] [|] [/] [-] [\] [|] [/]")
     (setf *activity-indicator-state* (mod (1+ *activity-indicator-state*) 8))
     (refresh-view)))
 
+
+(defmacro with-activity-indicator (&body body)
+  "Turn on activity indicator, perform BODY and turn off activity indicator"
+  `(progn
+     (ztree.view.message::show-activity t)
+     ,@body
+     (ztree.view.message::show-activity nil)))
 
 ;;; message-view.lisp ends here
