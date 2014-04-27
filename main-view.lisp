@@ -108,13 +108,13 @@ generates the function
   (refresh-view))
 
 
-(defun refresh-view ()
+(defun refresh-view (&key (do-refresh-model t))
   ;; if we have a ncurses window
   (when (main-window-window *main-window*)
     (wclear (main-window-window *main-window*))
     (box (main-window-window *main-window*) 0 0)
     (if (main-window-node *main-window*)
-        (refresh-contents)
+        (refresh-contents do-refresh-model)
         (wrefresh (main-window-window *main-window*)))))
 
 
@@ -128,7 +128,7 @@ generates the function
   (setf (main-window-width *main-window*) width)
   (setf (main-window-height *main-window*) height)
   (box (main-window-window *main-window*) 0 0)
-  (refresh-view))
+  (refresh-view :do-refresh-model nil))
 
 
 (defun window-line-to-tree-line (window-line)
@@ -169,7 +169,7 @@ in the buffer"
                                         (- (main-window-height *main-window*) 2)
                                         (tree-number-of-lines))))
     (setf (main-window-start-line *main-window*) new-position)
-    (refresh-view)))
+    (refresh-view :do-refresh-model nil)))
 
 (defun scroll-to-line (line)
   "Set the cursor to the LINE, line is the line in tree(buffer),
@@ -189,7 +189,7 @@ the screen
         (setf window-line (tree-line-to-window-line line))
         (setf (cursor-line (main-window-cursor *main-window*))
               (tree-line-to-window-line line))))
-  (refresh-view))
+  (refresh-view :do-refresh-model nil))
 
 ;; UP key event handler - move cursor up one line
 (defcommand up
@@ -198,7 +198,7 @@ the screen
     (if (> cursor-pos 0)
         (progn
           (setf (cursor-line (main-window-cursor *main-window*)) (1- cursor-pos))
-          (refresh-view))
+          (refresh-view :do-refresh-model nil))
         ;; otherwise - cursor is on the same place, but window moves up
         (scroll-lines -1))))
 
@@ -213,7 +213,7 @@ the screen
           (progn
             ;; otherwise update its position
             (setf (cursor-line (main-window-cursor *main-window*)) (1+ cursor-pos))
-            (refresh-view))))))
+            (refresh-view :do-refresh-model nil))))))
 
 ;; PAGE UP key event handler - scrolls up 1 screen if possible
 (defcommand pgup
@@ -250,7 +250,7 @@ the screen
               'ztree.model.node::right)
         (setf (cursor-side (main-window-cursor *main-window*))
               'ztree.model.node::left))
-    (refresh-view)))
+    (refresh-view :do-refresh-model nil)))
 
 ;; Action on Backspace key: to jump to the line of a parent node or
 ;; if previous key was Backspace - close the node
@@ -485,10 +485,11 @@ and redraws all data inside"
             (mvwprintw win window-line x-position short-name)))))))
 
 
-(defun refresh-contents ()
-  "Redraws all window's contents - tree and separator"
+(defun refresh-contents (do-refresh-model)
+  "Redraws all window's contents - tree(if DO-REFRESH-MODEL is t) and separator"
   ;; refresh tree in memory
-  (refresh-tree (main-window-node *main-window*))
+  (when do-refresh-model
+    (refresh-tree (main-window-node *main-window*)))
   ;; draw vertical separator
   (let* ((middle (floor (/ (- (main-window-width *main-window*) 2) 2))))
     (mvwvline (main-window-window *main-window*)
