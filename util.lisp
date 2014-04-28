@@ -32,6 +32,7 @@
            :file-directory-p
            :directory-files
            :concat
+           :curry
            ))
 
 (in-package :zdircmp.util)
@@ -152,5 +153,16 @@ Used since car-safe returns nil for atoms"
 
 (defmacro concat (str &rest others)
   `(concatenate 'string ,str ,@others))
+
+
+;; taken from http://common-lisp.net/project/bese/docs/arnesi/html/Higher_0020order_0020functions.html
+(defun curry (function &rest initial-args)
+  "Returns a function which will call FUNCTION passing it
+  INITIAL-ARGS and then any other args.
+
+ (funcall (curry #'list 1) 2) ==> (list 1 2)"
+  (lambda (&rest args)
+    (apply function (append initial-args args))))
+
 
 ;;; util.lisp ends here

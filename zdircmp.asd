@@ -29,6 +29,7 @@
                  (:file "main"
                         :depends-on ("constants"
                                      "utils-ui"
+                                     "base-view"
                                      "message-view"
                                      "head-view"
                                      "main-view"

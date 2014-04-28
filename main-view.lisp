@@ -31,7 +31,7 @@
         :zdircmp.ui.utils
         :zdircmp.ui.command)
   ;; import message function from zdircmp.view.message for easy use of messages
-  (:import-from :zdircmp.view.message :message)
+  ;(:import-from :zdircmp.view.message :message)
   (:export :create-view
            :destroy-view
            :resize-view
@@ -87,6 +87,9 @@ generates the function
        ,@body
        (set-last-command (quote ,name) (main-window-command *main-window*)))))
 
+
+(defun message (&rest args)
+  (declare (ignore args)))
 
 (defun destroy-view ()
   "Clears and destroys the ncurses window"
@@ -233,7 +236,6 @@ the screen
                (eq (diff-node-side node) 'zdircmp.model.node::both))
           (let ((left (diff-node-left-path node))
                 (right (diff-node-right-path node)))
-                                        ;(message  "Comparing ~a and ~a" left right)
             (def-prog-mode)
             (endwin)
             (asdf/run-program:run-program (list "vimdiff" left right) :ignore-error-status t :output :interactive)

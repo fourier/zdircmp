@@ -218,6 +218,7 @@ the rest is the combined list of nodes"
         (list2 (directory-files path2))
         (different-dir nil)
         (result nil))
+    (declare (optimize speed) (list list1 list2))
     (update-activity)
     ;; first - adding all entries from left directory
     (dolist (file1 list1)

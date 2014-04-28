@@ -48,6 +48,9 @@
    (width :initarg :width :initform 0 :accessor width)
    (height :initarg :height :initform 0 :accessor height)))
 
+(defgeneric destroy (v)
+  (:documentation "Destroy the associated with view ncurses window"))
+
 (defmethod destroy ((v view))
   (when (window v)
     (delwin (window v))
@@ -61,11 +64,16 @@
   (wrefresh (window v)))
 
 
+(defgeneric refresh (v)
+  (:documentation "Refreshes the associated ncurses window"))
+
 (defmethod refresh ((v view))
   (let ((w (window v)))
     (when w
       (wrefresh w))))
 
+(defgeneric resize (v x y width height)
+  (:documentation "Process the resize command, resizing the associated ncurses window"))
 
 (defmethod resize ((v view) x y width height)
   (let ((w (window v)))

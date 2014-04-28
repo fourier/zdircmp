@@ -26,10 +26,9 @@
   (:use ::common-lisp :cl-ncurses :zdircmp.view.base)
   ;; shadowing refresh from cl-ncurses, we use the one in base-view
   (:shadow :refresh)
-  (:export :create-view
-           :destroy-view
-           :resize-view
+  (:export :message-view
            :message
+           :refresh
            :show-activity
            :with-activity-indicator
            :update-activity))
@@ -49,27 +48,20 @@
 one of the following: [-] [\] [|] [/] [-] [\] [|] [/]"))
   (:documentation "1-line window for messages"))
 
-(defvar *message-window* nil
-  "Singleton of the 1-line window for messages")
-
 
 (defparameter +activity-statuses+ (vector "[-]" "[\\]" "[|]" "[/]" "[-]" "[\\]" "[|]" "[/]")
   "possible statuses of the activity indicator")
 
-(defun destroy-view ()
-  (when *message-window*
-    (destroy *message-window*)))
 
-(defun create-view (x y width height)
-  (destroy-view)
-  (setf *message-window* (make-instance 'message-view
-                                        :x x
-                                        :y y
-                                        :width width
-                                        :height height)))
+(defgeneric message (v str &rest arguments)
+  (:documentation "Prints a message in a message view"))
 
-(defmethod view-message ((v message-view) msg)
-  (let ((w (window v)))
+(defmethod message ((v message-view) str &rest arguments)
+  (let ((msg 
+         (if arguments
+             (apply #'format nil str arguments)
+             str))
+        (w (window v)))
     (wclear w)
     (when (activity-indicator-visible v)
       (mvwprintw w 0 0
@@ -81,51 +73,33 @@ one of the following: [-] [\] [|] [/] [-] [\] [|] [/]"))
     (wrefresh w)))
 
 
-(defun message (str &rest arguments)
-  (let ((msg 
-         (if arguments
-             (apply #'format nil str arguments)
-             str)))
-    (when *message-window*
-      (view-message *message-window* msg))))
-
-
 (defmethod refresh ((v message-view))
   (when (last-message v)
-    (view-message v (last-message v))))
-
-(defun resize-view (x y width height)
-  (when *message-window*
-    (resize *message-window* x y width height)))
+    (message v (last-message v))))
 
 
-(defmethod view-show-activity ((v message-view) show)
+(defgeneric show-activity (v show)
+  (:documentation "Show the activity indicator if SHOW is t, hide otherwise"))
+
+(defmethod show-activity ((v message-view) show)
   (setf (activity-indicator-state v) 0)
   (setf (activity-indicator-visible v) show)
   (refresh v))
 
 
-(defun show-activity (show)
-  "Show the activity indicator if SHOW is t, hide otherwise"
-  (when *message-window*
-    (view-show-activity *message-window* show)))
+(defgeneric update-activity (v)
+  (:documentation "Update the activity indicator if visible"))
 
-
-(defmethod view-update-activity ((v message-view))
+(defmethod update-activity ((v message-view))
   (when (activity-indicator-visible v)
     (setf (activity-indicator-state v) (mod (1+ (activity-indicator-state v)) 8))
     (refresh v)))
 
-(defun update-activity ()
-  "Update the activity indicator if visible"
-  (when *message-window*
-    (view-update-activity *message-window*)))
-
-(defmacro with-activity-indicator (&body body)
+(defmacro with-activity-indicator (v &body body)
   "Turn on activity indicator, perform BODY and turn off activity indicator"
   `(progn
-     (zdircmp.view.message::show-activity t)
+     (zdircmp.view.message::show-activity ,v t)
      ,@body
-     (zdircmp.view.message::show-activity nil)))
+     (zdircmp.view.message::show-activity ,v nil)))
 
 ;;; message-view.lisp ends here

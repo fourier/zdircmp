@@ -23,7 +23,14 @@
 
 ;;; Code:
 (defpackage :zdircmp.main
-  (:use ::common-lisp :cl-ncurses :zdircmp.constants :zdircmp.ui.utils :zdircmp.view.message)
+  (:use ::common-lisp
+        :cl-ncurses
+        :zdircmp.constants
+        :zdircmp.ui.utils
+        :zdircmp.view.base
+        :zdircmp.view.message
+        :zdircmp.util)
+  (:shadow refresh)
   (:export :main))
 
 (in-package :zdircmp.main)
@@ -42,6 +49,9 @@
   "Height of the help window")
 
 (defvar *head-window-visible* t)
+
+(defvar *message-view* nil
+  "Singleton of the 1-line window for messages")
 
 
 (define-condition on-bad-screen-size (error)
@@ -64,7 +74,7 @@
         (maxrows 0))
     (getmaxyx *stdscr* maxrows maxcols)
     (assert-screen-sizes-ok maxcols maxrows)
-    (zdircmp.view.message:resize-view 0 (1- maxrows) maxcols 1)
+    (resize *message-view* 0 (1- maxrows) maxcols 1)
     (let ((main-view-height (1- maxrows))
           (main-view-y 0))
       (when *head-window-visible*
@@ -79,7 +89,7 @@
   (setf *head-window-visible* (not *head-window-visible*))
   (zdircmp.view.help:show-view *head-window-visible*)
   (process-resize)
-  (message "~a heading window"
+  (message *message-view* "~a heading window"
            (if *head-window-visible* "Showing" "Hiding")))
 
 
@@ -90,27 +100,27 @@
         ((eq key +KEY-F1+)
          (toggle-head-view))
         ((eq key +KEY-F2+) 
-         (message "F2"))
+         (message *message-view* "F2"))
         ((eq key +KEY-F3+) 
-         (message "F3"))
+         (message *message-view* "F3"))
         ((eq key +KEY-F4+) 
-         (message "F4"))
+         (message *message-view* "F4"))
         ((eq key +KEY-F5+) 
-         (message "F5"))
+         (message *message-view* "F5"))
         ((eq key +KEY-F6+) 
-         (message "F6"))
+         (message *message-view* "F6"))
         ((eq key +KEY-F7+) 
-         (message "F7"))
+         (message *message-view* "F7"))
         ((eq key +KEY-F8+) 
-         (message "F8"))
+         (message *message-view* "F8"))
         ((eq key +KEY-F9+) 
-         (message "F9"))
+         (message *message-view* "F9"))
         ((eq key +KEY-F10+) 
-         (message "F10"))
+         (message *message-view* "F10"))
         ((eq key +KEY-F11+) 
-         (message "F11"))
+         (message *message-view* "F11"))
         ((eq key +KEY-F12+) 
-         (message "F12"))
+         (message *message-view* "F12"))
         ;; handle resize event
         ((eq key -1)
          (process-resize))
@@ -127,7 +137,7 @@
 (defun usage (appname)
   (format *error-output* (concatenate 'string "Usage: " appname " path1 path2~%"))
   (format *error-output* "where path1 and path2 - paths to directories to compare~%")
-  (sb-ext:quit))
+  (sb-ext:exit))
 
 (ql:quickload :swank)
 
@@ -153,7 +163,8 @@
             (curs-set 0)
             ;; clear and refresh screen
             (clear)
-            (refresh)
+            ;; refresh is shadowed
+            (cl-ncurses:refresh)
             ;; get the screen dimensions
             (let ((maxcols 0)
                   (maxrows 0))
@@ -163,7 +174,11 @@
                     ;; verify the screen size
                     (assert-screen-sizes-ok maxcols maxrows)
                     ;; create the messages window
-                    (zdircmp.view.message:create-view 0 (1- *lines*) *cols* 1)
+                    (setf *message-view* (make-instance 'message-view
+                                                          :x 0
+                                                          :y (1- *lines*)
+                                                          :width *cols*
+                                                          :height 1))
                     ;; create a help window if necessary
                     (let ((main-view-height (1- *lines*))
                           (main-view-y 0))
@@ -177,9 +192,13 @@
                       ;; create the main window
                       (zdircmp.view.main:create-view 0 main-view-y *cols* main-view-height))
                     ;; create a model node
-                    (with-activity-indicator 
+                    (with-activity-indicator *message-view*
                         (zdircmp.view.main:set-model-node 
-                         (zdircmp.model.node::create-root-node left-path right-path :message-function 'message :activity-function 'update-activity)))
+                         (zdircmp.model.node::create-root-node
+                          left-path
+                          right-path
+                          :message-function (curry #'message *message-view*)
+                          :activity-function (curry #'update-activity *message-view*))))
                     ;; keyboard input loop with ESC as an exit condition
                     (let ((key nil))
                       (loop while (setf key (getch)) do
@@ -187,10 +206,10 @@
 
                 ;; error handling: wrong screen size
                 (on-bad-screen-size (what) (format *error-output* (description what)))
-                (on-exit-command (command) (message "Exiting..."))))
+                (on-exit-command (command) (message *message-view* "Exiting..."))))
             ;; destroy windows
             (zdircmp.view.help:destroy-view)
-            (zdircmp.view.message:destroy-view)
+            (destroy *message-view*)
             (zdircmp.view.main:destroy-view))))))
 
 
