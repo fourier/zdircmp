@@ -30,7 +30,7 @@
         :zdircmp.view.base
         :zdircmp.view.message
         :zdircmp.util)
-  (:shadow refresh)
+  (:shadowing-import-from :zdircmp.view.base :refresh)
   (:export :main))
 
 (in-package :zdircmp.main)

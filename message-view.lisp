@@ -25,7 +25,9 @@
 (defpackage :zdircmp.view.message
   (:use ::common-lisp :cl-ncurses :zdircmp.view.base)
   ;; shadowing refresh from cl-ncurses, we use the one in base-view
-  (:shadow :refresh)
+  ;(:shadow :refresh)
+  ;;(:import-from :zdircmp.view.base :refresh)
+  (:shadowing-import-from :zdircmp.view.base :refresh)
   (:export :message-view
            :message
            :refresh
@@ -74,8 +76,8 @@ one of the following: [-] [\] [|] [/] [-] [\] [|] [/]"))
 
 
 (defmethod refresh ((v message-view))
-  (when (last-message v)
-    (message v (last-message v))))
+ (when (last-message v)
+   (message v (last-message v))))
 
 
 (defgeneric show-activity (v show)
