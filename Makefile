@@ -20,4 +20,4 @@ all: $(SOURCES)
 clean:
 	@rm -rf *.fasl
 	@rm -rf *.core
-	@rm -rf cl-zdiff
+	@rm -rf zdircmp

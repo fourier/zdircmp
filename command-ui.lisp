@@ -21,7 +21,7 @@
 
 ;;; Code:
 
-(defpackage :ztree.ui.command
+(defpackage :zdircmp.ui.command
   (:use :common-lisp)
   (:export :user-command
            :last-command
@@ -29,7 +29,7 @@
            :repeat-count
            ))
 
-(in-package :ztree.ui.command)
+(in-package :zdircmp.ui.command)
 
 
 ;; Last entered user command
@@ -42,5 +42,5 @@
     (setf repeat-count 
           (if (eq last-command cmd) (1+ repeat-count) 0))
     (setf last-command cmd)))
-    
+
 ;;; command-ui.lisp ends here

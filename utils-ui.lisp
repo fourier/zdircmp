@@ -22,11 +22,11 @@
 ;; Main View
 
 ;;; Code:
-(defpackage :ztree.ui.utils
-  (:use :common-lisp :cl-ncurses :ztree.util)
+(defpackage :zdircmp.ui.utils
+  (:use :common-lisp :cl-ncurses :zdircmp.util)
   (:export :defacs))
 
-(in-package :ztree.ui.utils)
+(in-package :zdircmp.ui.utils)
 
 ;; define ACS_* macros
 (defmacro defacs (name char) `(defconstant-export ,name (+ cl-ncurses:a_altcharset
@@ -53,7 +53,7 @@
 (defacs ACS_DEGREE  #\f) ; degree symbol 
 (defacs ACS_PLMINUS #\g) ; plus/minus 
 (defacs ACS_BULLET  #\~) ; bullet 
-; Teletype 5410v1 symbols begin here 
+                                        ; Teletype 5410v1 symbols begin here 
 (defacs ACS_LARROW  #\,) ; arrow pointing left 
 (defacs ACS_RARROW  #\+) ; arrow pointing right 
 (defacs ACS_DARROW  #\.) ; arrow pointing down 

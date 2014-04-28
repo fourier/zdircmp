@@ -1,4 +1,4 @@
-;;; util.lisp --- Auxulary utilities for the cl-ztree app
+;;; util.lisp --- Auxulary utilities for the cl-zdircmp app
 
 ;; Copyright (C) 2014 Alexey Veretennikov
 ;;
@@ -21,7 +21,7 @@
 
 ;;; Code:
 
-(defpackage :ztree.util
+(defpackage :zdircmp.util
   (:use :common-lisp :cl-fad)
   (:export :defconstant-export
            :defun-export
@@ -34,7 +34,7 @@
            :concat
            ))
 
-(in-package :ztree.util)
+(in-package :zdircmp.util)
 
 (eval-when (:load-toplevel :compile-toplevel :execute)
   (require 'cl-fad))
@@ -44,7 +44,7 @@
 ;; Set of macros defining exporting symbols
 ;; Based on from http://clocc.sourceforge.net/clocc/src/ext/exporting/exporting.lisp
 (defmacro defconstant-export (&whole whole
-                             name initial-value &optional documentation)
+                                name initial-value &optional documentation)
   "Declares and exports the constant. Usage is the same as DEFCONSTANT"
   (declare (ignore initial-value documentation))
   `(progn
@@ -146,7 +146,7 @@ Used since car-safe returns nil for atoms"
     (when (and (not dir-exists) (not file-exists))
       (error 'not-exists (format t "File ~a not exists" filename)))
     (if dir-exists t nil)))
-        
+
 (defun directory-files (dirname)
   (mapcar 'namestring (list-directory dirname)))
 

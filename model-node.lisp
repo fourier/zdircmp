@@ -22,8 +22,8 @@
 ;; Diff model node
 
 ;;; Code:
-(defpackage :ztree.model.node
-  (:use :common-lisp :ztree.util :cl-fad)
+(defpackage :zdircmp.model.node
+  (:use :common-lisp :zdircmp.util :cl-fad)
   (:export :create-root-node
            ;; diff-node getters/setters
            :diff-node-parent
@@ -44,7 +44,7 @@
            :diff-node-update))
 
 
-(in-package :ztree.model.node)
+(in-package :zdircmp.model.node)
 
 (declaim (optimize speed))
 
@@ -344,8 +344,8 @@ the rest is the combined list of nodes"
   (message "Done."))
 
 ;; Examples:
-;; (ztree.model.node::create-root-node "~/difftest/diff1" "~/difftest/diff2")
+;; (zdircmp.model.node::create-root-node "~/difftest/diff1" "~/difftest/diff2")
 ;; with optional message function:
-;; (ztree.model.node::create-root-node "~/difftest/diff1" "~/difftest/diff2" :message-function #'(lambda (str) (princ str)))
+;; (zdircmp.model.node::create-root-node "~/difftest/diff1" "~/difftest/diff2" :message-function #'(lambda (str) (princ str)))
 
 ;;; model-node.lisp ends here

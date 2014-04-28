@@ -22,16 +22,16 @@
 ;; Main View
 
 ;;; Code:
-(defpackage :ztree.view.main
+(defpackage :zdircmp.view.main
   (:use ::common-lisp :cl-ncurses
-        :ztree.util
-        :ztree.model.node
-        :ztree.model.tree
-        :ztree.constants
-        :ztree.ui.utils
-        :ztree.ui.command)
-  ;; import message function from ztree.view.message for easy use of messages
-  (:import-from :ztree.view.message :message)
+        :zdircmp.util
+        :zdircmp.model.node
+        :zdircmp.model.tree
+        :zdircmp.constants
+        :zdircmp.ui.utils
+        :zdircmp.ui.command)
+  ;; import message function from zdircmp.view.message for easy use of messages
+  (:import-from :zdircmp.view.message :message)
   (:export :create-view
            :destroy-view
            :resize-view
@@ -39,7 +39,7 @@
            :set-model-node
            :refresh-view))
 
-(in-package :ztree.view.main)
+(in-package :zdircmp.view.main)
 
 (shadowing-import 'timeout)
 
@@ -48,9 +48,9 @@
 
 (defstruct cursor
   "Cursor position. LINE is the line number in window, SIDE
-is the side of the cursor - 'ztree.model.node::left or 'ztree.model.node::right"
+is the side of the cursor - 'zdircmp.model.node::left or 'zdircmp.model.node::right"
   (line 0)
-  (side 'ztree.model.node::left))
+  (side 'zdircmp.model.node::left))
 
 
 (defstruct main-window
@@ -193,81 +193,81 @@ the screen
 
 ;; UP key event handler - move cursor up one line
 (defcommand up
-  (let ((cursor-pos (cursor-line (main-window-cursor *main-window*))))
-    ;; if the cursor is not on the first line, just move it up
-    (if (> cursor-pos 0)
-        (progn
-          (setf (cursor-line (main-window-cursor *main-window*)) (1- cursor-pos))
-          (refresh-view :do-refresh-model nil))
-        ;; otherwise - cursor is on the same place, but window moves up
-        (scroll-lines -1))))
+    (let ((cursor-pos (cursor-line (main-window-cursor *main-window*))))
+      ;; if the cursor is not on the first line, just move it up
+      (if (> cursor-pos 0)
+          (progn
+            (setf (cursor-line (main-window-cursor *main-window*)) (1- cursor-pos))
+            (refresh-view :do-refresh-model nil))
+          ;; otherwise - cursor is on the same place, but window moves up
+          (scroll-lines -1))))
 
 ;; DOWN key event handler - move cursor down one line
 (defcommand down
-  (let ((cursor-pos (cursor-line (main-window-cursor *main-window*))))
-    (when (/= (+ (main-window-start-line *main-window*) cursor-pos)
-              (1- (tree-number-of-lines)))
-      ;; if the cursor is on the last line, scroll down, cursor is on the same place
-      (if (= cursor-pos (- (main-window-height *main-window*) 3))
-          (scroll-lines 1)
-          (progn
-            ;; otherwise update its position
-            (setf (cursor-line (main-window-cursor *main-window*)) (1+ cursor-pos))
-            (refresh-view :do-refresh-model nil))))))
+    (let ((cursor-pos (cursor-line (main-window-cursor *main-window*))))
+      (when (/= (+ (main-window-start-line *main-window*) cursor-pos)
+                (1- (tree-number-of-lines)))
+        ;; if the cursor is on the last line, scroll down, cursor is on the same place
+        (if (= cursor-pos (- (main-window-height *main-window*) 3))
+            (scroll-lines 1)
+            (progn
+              ;; otherwise update its position
+              (setf (cursor-line (main-window-cursor *main-window*)) (1+ cursor-pos))
+              (refresh-view :do-refresh-model nil))))))
 
 ;; PAGE UP key event handler - scrolls up 1 screen if possible
 (defcommand pgup
-  (scroll-lines (- (main-window-height *main-window*))))
+    (scroll-lines (- (main-window-height *main-window*))))
 
 ;; PAGE DOWN key event handler - scrolls down 1 screen if possible"
 (defcommand pgdn
-  (scroll-lines (main-window-height *main-window*)))
+    (scroll-lines (main-window-height *main-window*)))
 
 ;; ENTER key event handler - opens/close directories"
 (defcommand return
-  (let* ((line (line-number-at-pos))
-         (node (tree-entry-node (tree-entry-at-line line)))
-         (expanded (node-expanded-p node))
-         (node-is-file (not (diff-node-is-directory node))))
-    (if (and node-is-file
-             (eq (diff-node-side node) 'ztree.model.node::both))
-        (let ((left (diff-node-left-path node))
-              (right (diff-node-right-path node)))
+    (let* ((line (line-number-at-pos))
+           (node (tree-entry-node (tree-entry-at-line line)))
+           (expanded (node-expanded-p node))
+           (node-is-file (not (diff-node-is-directory node))))
+      (if (and node-is-file
+               (eq (diff-node-side node) 'zdircmp.model.node::both))
+          (let ((left (diff-node-left-path node))
+                (right (diff-node-right-path node)))
                                         ;(message  "Comparing ~a and ~a" left right)
-          (def-prog-mode)
-          (endwin)
-          (asdf/run-program:run-program (list "vimdiff" left right) :ignore-error-status t :output :interactive)
-          (reset-prog-mode)
-          (refresh))
-        (toggle-expand-state-by-line line (not expanded))))
+            (def-prog-mode)
+            (endwin)
+            (asdf/run-program:run-program (list "vimdiff" left right) :ignore-error-status t :output :interactive)
+            (reset-prog-mode)
+            (refresh))
+          (toggle-expand-state-by-line line (not expanded))))
   (refresh-view))
 
 ;; TAB key event handler - jump to the other side of the window"
 (defcommand tab
-  (let ((side (cursor-side (main-window-cursor *main-window*))))
-    (if (eq side 'ztree.model.node::left)
-        (setf (cursor-side (main-window-cursor *main-window*))
-              'ztree.model.node::right)
-        (setf (cursor-side (main-window-cursor *main-window*))
-              'ztree.model.node::left))
-    (refresh-view :do-refresh-model nil)))
+    (let ((side (cursor-side (main-window-cursor *main-window*))))
+      (if (eq side 'zdircmp.model.node::left)
+          (setf (cursor-side (main-window-cursor *main-window*))
+                'zdircmp.model.node::right)
+          (setf (cursor-side (main-window-cursor *main-window*))
+                'zdircmp.model.node::left))
+      (refresh-view :do-refresh-model nil)))
 
 ;; Action on Backspace key: to jump to the line of a parent node or
 ;; if the node is directory and expanded - close it
 (defcommand backspace
-  (let* ((line (line-number-at-pos))
-         (entry (tree-entry-at-line line))
-         (parent-line (tree-entry-parent-line entry))
-         (is-dir (diff-node-is-directory (tree-entry-node entry)))
-         (expanded (node-expanded-p (tree-entry-node entry))))
-    ;; perform action on any node except the root node
-    (when (/= parent-line line)
-      (if (and is-dir
-               expanded)
-          (progn
-            (toggle-expand-state-by-line line nil)
-            (refresh-view))
-          (scroll-to-line parent-line)))))
+    (let* ((line (line-number-at-pos))
+           (entry (tree-entry-at-line line))
+           (parent-line (tree-entry-parent-line entry))
+           (is-dir (diff-node-is-directory (tree-entry-node entry)))
+           (expanded (node-expanded-p (tree-entry-node entry))))
+      ;; perform action on any node except the root node
+      (when (/= parent-line line)
+        (if (and is-dir
+                 expanded)
+            (progn
+              (toggle-expand-state-by-line line nil)
+              (refresh-view))
+            (scroll-to-line parent-line)))))
 
 
 (defun process-key (key)
@@ -336,15 +336,15 @@ and redraws all data inside"
          (node (tree-entry-node entry))
          (offset (tree-entry-offset entry))
          (side (diff-node-side node))
-         (short-name (if (or (eq side 'ztree.model.node::both)
-                             (eq side 'ztree.model.node::left))
+         (short-name (if (or (eq side 'zdircmp.model.node::both)
+                             (eq side 'zdircmp.model.node::left))
                          (diff-node-short-name node)
                          (diff-node-right-short-name node)))
          (expandable (diff-node-is-directory node))
          (expanded   (node-expanded-p node))
          (diff       (diff-node-different node))
          (parent-line (tree-entry-parent-line entry)))
-    (if (eq side 'ztree.model.node::both)
+    (if (eq side 'zdircmp.model.node::both)
         ;; insert left AND right labels
         (progn 
           (insert-single-entry short-name
@@ -353,7 +353,7 @@ and redraws all data inside"
                                line
                                parent-line
                                offset
-                               'ztree.model.node::left
+                               'zdircmp.model.node::left
                                diff)
           (insert-single-entry short-name
                                expandable
@@ -361,7 +361,7 @@ and redraws all data inside"
                                line
                                parent-line
                                offset
-                               'ztree.model.node::right
+                               'zdircmp.model.node::right
                                diff))
         (progn
           (insert-single-entry short-name
@@ -380,7 +380,7 @@ and redraws all data inside"
   (let* ((middle (floor (/ (- (main-window-width *main-window*) 2) 2)))
          (x-position (+ +left-offset+
                         (* offset 4)
-                        (if (eq side 'ztree.model.node::left) middle 0)))
+                        (if (eq side 'zdircmp.model.node::left) middle 0)))
          (win (main-window-window *main-window*)))
     (when (and (= (1- window-line)
                   (cursor-line (main-window-cursor *main-window*)))
@@ -391,8 +391,8 @@ and redraws all data inside"
 
 
 (defun color-for-diff (diff)
-  (cond ((eq diff 'ztree.model.node::diff) :red)
-        ((eq diff 'ztree.model.node::new)  :blue)
+  (cond ((eq diff 'zdircmp.model.node::diff) :red)
+        ((eq diff 'zdircmp.model.node::new)  :blue)
         (t :white)))
 
 (defun inverse-color (color)
@@ -421,7 +421,7 @@ and redraws all data inside"
          (x-position (+ +left-offset+     ; 1) offset from window left side (to move out of border)
                         (* (1+ offset) 4) ; 2) 4 chars for possible [+], and 4 chars per offset
                                         ; 3) shift to the middle for the right-side nodes
-                        (if (eq side 'ztree.model.node::right) (1+ middle) 0))) 
+                        (if (eq side 'zdircmp.model.node::right) (1+ middle) 0))) 
          (win (main-window-window *main-window*))
          (height (main-window-height *main-window*))
          (window-line (1+ (tree-line-to-window-line line)))

@@ -1,8 +1,8 @@
-CL-ztree-diff
+zdircmp
 =============
-cl-ztree-diff (cl-zdiff) is a text-mode directory-diff tool inspired by commercial tools like Beyond Compare or Araxis Merge.
+**zdircmp** is a text-mode directory-diff tool inspired by commercial tools like Beyond Compare or Araxis Merge.
 It is an attempt to remake [ztree-diff](https://github.com/fourier/ztree) as a stand-alone ncurses-based application, therefore it is implemented in Common Lisp.
-Currenly it is tested only on OSX/SBCL platform/compiler combination.
+Currenly it is known to work only with OSX|Linux/SBCL platform/compiler combination.
 
 Requirements
 ============
@@ -26,6 +26,6 @@ Usage
 =====
 Example:
 <pre>
-./cl-zdiff dir1 dir2
+./zdircmp dir1 dir2
 </pre>
 

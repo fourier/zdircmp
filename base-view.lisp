@@ -22,8 +22,8 @@
 ;; Base View
 
 ;;; Code:
-(defpackage :ztree.view.base
-  (:use ::common-lisp :cl-ncurses :ztree.ui.utils)
+(defpackage :zdircmp.view.base
+  (:use ::common-lisp :cl-ncurses :zdircmp.ui.utils)
   ;; shadowing refresh from cl-ncurses, we don't use it anyway
   (:shadow :refresh)
   (:export :view
@@ -38,7 +38,7 @@
 
 (require 'cl-ncurses)
 
-(in-package :ztree.view.base)
+(in-package :zdircmp.view.base)
 
 (defclass view ()
   ;; ncurses window
@@ -66,7 +66,7 @@
     (when w
       (wrefresh w))))
 
-      
+
 (defmethod resize ((v view) x y width height)
   (let ((w (window v)))
     (when w

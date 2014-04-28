@@ -22,10 +22,10 @@
 ;; Main View
 
 ;;; Code:
-(defpackage :ztree.constants
-  (:use :common-lisp :ztree.util))
+(defpackage :zdircmp.constants
+  (:use :common-lisp :zdircmp.util))
 
-(in-package :ztree.constants)
+(in-package :zdircmp.constants)
 
 
 ;; base-8 constants for getch, from curses.h

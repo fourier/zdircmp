@@ -22,15 +22,15 @@
 ;; Help View
 
 ;;; Code:
-(defpackage :ztree.view.help
-  (:use ::common-lisp :cl-ncurses :ztree.util)
+(defpackage :zdircmp.view.help
+  (:use ::common-lisp :cl-ncurses :zdircmp.util)
   (:export :create-view
            :destroy-view
            :resize-view
            :show-view))
 
 
-(in-package :ztree.view.help)
+(in-package :zdircmp.view.help)
 
 (shadowing-import 'timeout)
 (use-package 'cl-ncurses)

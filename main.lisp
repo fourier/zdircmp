@@ -22,11 +22,11 @@
 ;; Main entry point to the application, including Text User Interface
 
 ;;; Code:
-(defpackage :ztree.main
-  (:use ::common-lisp :cl-ncurses :ztree.constants :ztree.ui.utils :ztree.view.message)
+(defpackage :zdircmp.main
+  (:use ::common-lisp :cl-ncurses :zdircmp.constants :zdircmp.ui.utils :zdircmp.view.message)
   (:export :main))
 
-(in-package :ztree.main)
+(in-package :zdircmp.main)
 
 ;; resolving conflict - the sb-ext already has the timeout function,
 ;; so shadowing importing one from the cl-ncurses package
@@ -64,20 +64,20 @@
         (maxrows 0))
     (getmaxyx *stdscr* maxrows maxcols)
     (assert-screen-sizes-ok maxcols maxrows)
-    (ztree.view.message:resize-view 0 (1- maxrows) maxcols 1)
+    (zdircmp.view.message:resize-view 0 (1- maxrows) maxcols 1)
     (let ((main-view-height (1- maxrows))
           (main-view-y 0))
       (when *head-window-visible*
-        (ztree.view.help:resize-view 0 0 maxcols +head-window-height+)
+        (zdircmp.view.help:resize-view 0 0 maxcols +head-window-height+)
         (setf main-view-height (- main-view-height +head-window-height+))
         (setf main-view-y (+ main-view-y +head-window-height+)))
       ;; create the main window
-      (ztree.view.main:resize-view 0 main-view-y maxcols main-view-height))))
+      (zdircmp.view.main:resize-view 0 main-view-y maxcols main-view-height))))
 
 
 (defun toggle-head-view ()
   (setf *head-window-visible* (not *head-window-visible*))
-  (ztree.view.help:show-view *head-window-visible*)
+  (zdircmp.view.help:show-view *head-window-visible*)
   (process-resize)
   (message "~a heading window"
            (if *head-window-visible* "Showing" "Hiding")))
@@ -115,7 +115,7 @@
         ((eq key -1)
          (process-resize))
         ;; process others in main view
-        (t (ztree.view.main:process-key key))))
+        (t (zdircmp.view.main:process-key key))))
 
 (defun command-line ()
   (or 
@@ -139,8 +139,8 @@
               (right-path (third cmdargs)))
           (swank:create-server :port 4006)
           (with-ncurses
-            ;; no caching of the input
-            (cbreak)
+              ;; no caching of the input
+              (cbreak)
             ;; turn on special keys 
             (keypad *stdscr* 1)
             ;; turn on color 
@@ -163,23 +163,23 @@
                     ;; verify the screen size
                     (assert-screen-sizes-ok maxcols maxrows)
                     ;; create the messages window
-                    (ztree.view.message:create-view 0 (1- *lines*) *cols* 1)
+                    (zdircmp.view.message:create-view 0 (1- *lines*) *cols* 1)
                     ;; create a help window if necessary
                     (let ((main-view-height (1- *lines*))
                           (main-view-y 0))
                       (when *head-window-visible*
-                        (ztree.view.help:create-view 0 0
-                                                     *cols* +head-window-height+
-                                                     left-path
-                                                     right-path)
+                        (zdircmp.view.help:create-view 0 0
+                                                       *cols* +head-window-height+
+                                                       left-path
+                                                       right-path)
                         (setf main-view-height (- main-view-height +head-window-height+))
                         (setf main-view-y (+ main-view-y +head-window-height+)))
                       ;; create the main window
-                      (ztree.view.main:create-view 0 main-view-y *cols* main-view-height))
+                      (zdircmp.view.main:create-view 0 main-view-y *cols* main-view-height))
                     ;; create a model node
                     (with-activity-indicator 
-                        (ztree.view.main:set-model-node 
-                         (ztree.model.node::create-root-node left-path right-path :message-function 'message :activity-function 'update-activity)))
+                        (zdircmp.view.main:set-model-node 
+                         (zdircmp.model.node::create-root-node left-path right-path :message-function 'message :activity-function 'update-activity)))
                     ;; keyboard input loop with ESC as an exit condition
                     (let ((key nil))
                       (loop while (setf key (getch)) do
@@ -189,9 +189,9 @@
                 (on-bad-screen-size (what) (format *error-output* (description what)))
                 (on-exit-command (command) (message "Exiting..."))))
             ;; destroy windows
-            (ztree.view.help:destroy-view)
-            (ztree.view.message:destroy-view)
-            (ztree.view.main:destroy-view))))))
+            (zdircmp.view.help:destroy-view)
+            (zdircmp.view.message:destroy-view)
+            (zdircmp.view.main:destroy-view))))))
 
 
 ;;; main.lisp ends here

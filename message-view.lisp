@@ -22,8 +22,8 @@
 ;; Message View
 
 ;;; Code:
-(defpackage :ztree.view.message
-  (:use ::common-lisp :cl-ncurses :ztree.view.base)
+(defpackage :zdircmp.view.message
+  (:use ::common-lisp :cl-ncurses :zdircmp.view.base)
   ;; shadowing refresh from cl-ncurses, we use the one in base-view
   (:shadow :refresh)
   (:export :create-view
@@ -36,7 +36,7 @@
 
 (require 'cl-ncurses)
 
-(in-package :ztree.view.message)
+(in-package :zdircmp.view.message)
 
 (defclass message-view (view)
   ((last-message :initform nil
@@ -79,7 +79,7 @@ one of the following: [-] [\] [|] [/] [-] [\] [|] [/]"))
                msg)
     (setf (last-message v) msg)
     (wrefresh w)))
-  
+
 
 (defun message (str &rest arguments)
   (let ((msg 
@@ -93,7 +93,7 @@ one of the following: [-] [\] [|] [/] [-] [\] [|] [/]"))
 (defmethod refresh ((v message-view))
   (when (last-message v)
     (view-message v (last-message v))))
-  
+
 (defun resize-view (x y width height)
   (when *message-window*
     (resize *message-window* x y width height)))
@@ -103,7 +103,7 @@ one of the following: [-] [\] [|] [/] [-] [\] [|] [/]"))
   (setf (activity-indicator-state v) 0)
   (setf (activity-indicator-visible v) show)
   (refresh v))
-  
+
 
 (defun show-activity (show)
   "Show the activity indicator if SHOW is t, hide otherwise"
@@ -124,8 +124,8 @@ one of the following: [-] [\] [|] [/] [-] [\] [|] [/]"))
 (defmacro with-activity-indicator (&body body)
   "Turn on activity indicator, perform BODY and turn off activity indicator"
   `(progn
-     (ztree.view.message::show-activity t)
+     (zdircmp.view.message::show-activity t)
      ,@body
-     (ztree.view.message::show-activity nil)))
+     (zdircmp.view.message::show-activity nil)))
 
 ;;; message-view.lisp ends here
