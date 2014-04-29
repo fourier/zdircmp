@@ -25,12 +25,9 @@
 (defpackage :zdircmp.view.message
   (:use ::common-lisp :cl-ncurses :zdircmp.view.base)
   ;; shadowing refresh from cl-ncurses, we use the one in base-view
-  ;(:shadow :refresh)
-  ;;(:import-from :zdircmp.view.base :refresh)
   (:shadowing-import-from :zdircmp.view.base :refresh)
   (:export :message-view
            :message
-           :refresh
            :show-activity
            :with-activity-indicator
            :update-activity))

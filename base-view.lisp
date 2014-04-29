@@ -34,7 +34,8 @@
            :height
            :refresh
            :destroy
-           :resize))
+           :resize
+           :show))
 
 (require 'cl-ncurses)
 
@@ -61,6 +62,7 @@
   ;; ignore unused args warning
   (declare (ignore args))
   (setf (window v) (newwin (height v) (width v) (y v) (x v)))
+  (refresh v)
   (wrefresh (window v)))
 
 
@@ -83,5 +85,22 @@
       (mvwin w y x)
       (refresh v))))
 
+
+(defgeneric show (v show)
+  (:documentation "Show or hides window depending on SHOW argument"))
+
+(defmethod show ((v view) show)
+  (let ((w (window v)))
+    (when w
+      (wclear w)
+      (wrefresh w)
+      (delwin w))
+    (setf (window v) 
+          (if show (newwin (height v)
+                           (width v)
+                           (y v)
+                           (x v))
+              nil))
+    (refresh v)))
 
 ;;; base-view.lisp ends here

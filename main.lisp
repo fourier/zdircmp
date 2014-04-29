@@ -29,6 +29,7 @@
         :zdircmp.ui.utils
         :zdircmp.view.base
         :zdircmp.view.message
+        :zdircmp.view.help
         :zdircmp.util)
   (:shadowing-import-from :zdircmp.view.base :refresh)
   (:export :main))
@@ -45,10 +46,13 @@
 (defconstant +min-screen-height+ 15
   "Minimum supported screen height")
 
-(defconstant +head-window-height+ 3
+(defconstant +help-window-height+ 3
   "Height of the help window")
 
-(defvar *head-window-visible* t)
+(defvar *help-window-visible* t)
+
+(defvar *help-window* nil
+  "Help window")
 
 (defvar *message-view* nil
   "Singleton of the 1-line window for messages")
@@ -77,20 +81,20 @@
     (resize *message-view* 0 (1- maxrows) maxcols 1)
     (let ((main-view-height (1- maxrows))
           (main-view-y 0))
-      (when *head-window-visible*
-        (zdircmp.view.help:resize-view 0 0 maxcols +head-window-height+)
-        (setf main-view-height (- main-view-height +head-window-height+))
-        (setf main-view-y (+ main-view-y +head-window-height+)))
+      (when *help-window-visible*
+        (resize *help-window* 0 0 maxcols +help-window-height+)
+        (setf main-view-height (- main-view-height +help-window-height+))
+        (setf main-view-y (+ main-view-y +help-window-height+)))
       ;; create the main window
       (zdircmp.view.main:resize-view 0 main-view-y maxcols main-view-height))))
 
 
-(defun toggle-head-view ()
-  (setf *head-window-visible* (not *head-window-visible*))
-  (zdircmp.view.help:show-view *head-window-visible*)
+(defun toggle-help-view ()
+  (setf *help-window-visible* (not *help-window-visible*))
+  (show *help-window* *help-window-visible*)
   (process-resize)
   (message *message-view* "~a heading window"
-           (if *head-window-visible* "Showing" "Hiding")))
+           (if *help-window-visible* "Showing" "Hiding")))
 
 
 (defun handle-key (key)
@@ -98,7 +102,7 @@
   (cond ((eq key +KEY-ESC+)
          (signal 'on-exit-command :text "exit"))
         ((eq key +KEY-F1+)
-         (toggle-head-view))
+         (toggle-help-view))
         ((eq key +KEY-F2+) 
          (message *message-view* "F2"))
         ((eq key +KEY-F3+) 
@@ -182,13 +186,16 @@
                     ;; create a help window if necessary
                     (let ((main-view-height (1- *lines*))
                           (main-view-y 0))
-                      (when *head-window-visible*
-                        (zdircmp.view.help:create-view 0 0
-                                                       *cols* +head-window-height+
-                                                       left-path
-                                                       right-path)
-                        (setf main-view-height (- main-view-height +head-window-height+))
-                        (setf main-view-y (+ main-view-y +head-window-height+)))
+                      (when *help-window-visible*
+                        (setf *help-window* (make-instance 'help-view
+                                                           :x 0
+                                                           :y 0
+                                                           :width *cols*
+                                                           :height +help-window-height+
+                                                           :left-path left-path
+                                                           :right-path right-path))
+                        (setf main-view-height (- main-view-height +help-window-height+))
+                        (setf main-view-y (+ main-view-y +help-window-height+)))
                       ;; create the main window
                       (zdircmp.view.main:create-view 0 main-view-y *cols* main-view-height))
                     ;; create a model node
@@ -208,7 +215,7 @@
                 (on-bad-screen-size (what) (format *error-output* (description what)))
                 (on-exit-command (command) (message *message-view* "Exiting..."))))
             ;; destroy windows
-            (zdircmp.view.help:destroy-view)
+            (destroy *help-window*)
             (destroy *message-view*)
             (zdircmp.view.main:destroy-view))))))
 

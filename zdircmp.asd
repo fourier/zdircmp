@@ -13,7 +13,7 @@
                  (:file "base-view"
                         :depends-on ("utils-ui"))
                  (:file "message-view" :depends-on ("utils-ui" "base-view"))
-                 (:file "head-view" :depends-on ("util" "utils-ui"))
+                 (:file "help-view" :depends-on ("util" "utils-ui" "base-view"))
                  (:file "model-node"
                         :depends-on ("util"))
                  (:file "model-tree"
@@ -31,7 +31,7 @@
                                      "utils-ui"
                                      "base-view"
                                      "message-view"
-                                     "head-view"
+                                     "help-view"
                                      "main-view"
                                      "utils-ui"
                                      "model-node"))))
