@@ -35,6 +35,7 @@
            :refresh
            :destroy
            :resize
+           :visible
            :show))
 
 (require 'cl-ncurses)
@@ -85,6 +86,11 @@
       (mvwin w y x)
       (refresh v))))
 
+(defgeneric visible (v)
+  (:documentation "Determines if the window is visible"))
+
+(defmethod visible ((v view))
+  (window v))
 
 (defgeneric show (v show)
   (:documentation "Show or hides window depending on SHOW argument"))
@@ -97,7 +103,7 @@
       (delwin w))
     (setf (window v) 
           (if show (newwin (height v)
-                           (width v)
+                              (width v)
                            (y v)
                            (x v))
               nil))

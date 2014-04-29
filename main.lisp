@@ -49,8 +49,6 @@
 (defconstant +help-window-height+ 3
   "Height of the help window")
 
-(defvar *help-window-visible* t)
-
 (defvar *help-window* nil
   "Help window")
 
@@ -81,7 +79,7 @@
     (resize *message-view* 0 (1- maxrows) maxcols 1)
     (let ((main-view-height (1- maxrows))
           (main-view-y 0))
-      (when *help-window-visible*
+      (when (visible *help-window*)
         (resize *help-window* 0 0 maxcols +help-window-height+)
         (setf main-view-height (- main-view-height +help-window-height+))
         (setf main-view-y (+ main-view-y +help-window-height+)))
@@ -90,11 +88,10 @@
 
 
 (defun toggle-help-view ()
-  (setf *help-window-visible* (not *help-window-visible*))
-  (show *help-window* *help-window-visible*)
+  (show *help-window* (not (visible *help-window*)))
   (process-resize)
   (message *message-view* "~a heading window"
-           (if *help-window-visible* "Showing" "Hiding")))
+           (if (visible *help-window*) "Showing" "Hiding")))
 
 
 (defun handle-key (key)
@@ -186,16 +183,16 @@
                     ;; create a help window if necessary
                     (let ((main-view-height (1- *lines*))
                           (main-view-y 0))
-                      (when *help-window-visible*
-                        (setf *help-window* (make-instance 'help-view
-                                                           :x 0
-                                                           :y 0
-                                                           :width *cols*
-                                                           :height +help-window-height+
-                                                           :left-path left-path
-                                                           :right-path right-path))
-                        (setf main-view-height (- main-view-height +help-window-height+))
-                        (setf main-view-y (+ main-view-y +help-window-height+)))
+                      (setf *help-window* (make-instance 'help-view
+                                                         :x 0
+                                                         :y 0
+                                                         :width *cols*
+                                                         :height +help-window-height+
+                                                         :left-path left-path
+                                                         :right-path right-path))
+                      (setf main-view-height (- main-view-height
+                                                +help-window-height+)
+                            main-view-y (+ main-view-y +help-window-height+))
                       ;; create the main window
                       (zdircmp.view.main:create-view 0 main-view-y *cols* main-view-height))
                     ;; create a model node
