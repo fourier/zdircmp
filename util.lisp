@@ -37,8 +37,8 @@
 
 (in-package :zdircmp.util)
 
-(eval-when (:load-toplevel :compile-toplevel :execute)
-  (require 'cl-fad))
+;; (eval-when (:load-toplevel :compile-toplevel :execute)
+;;   (require 'cl-fad))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

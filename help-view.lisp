@@ -43,7 +43,8 @@
    (:documentation "Help window class"))
 
 
-(defmethod refresh :before ((v help-view))
+(defmethod refresh :before ((v help-view) &key (force t))
+  (declare (ignore force))
   (let ((w (window v)))
     (mvwprintw w 0 0 "Directory tree differences report")
     (mvwprintw w 1 0 (concat "Left:  " (left-path v)))

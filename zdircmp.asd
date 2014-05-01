@@ -20,6 +20,7 @@
                         :depends-on ("util" "model-node"))
                  (:file "main-view"
                         :depends-on ("util"
+                                     "base-view"
                                      "command-ui"
                                      "model-node"
                                      "model-tree"

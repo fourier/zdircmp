@@ -6,7 +6,8 @@ SBCL = sbcl --noinform
 debug: all
 
 .PHONY: release
-release: SBCL += --non-interactive
+release: SBCL += --disable-debugger
+#--non-interactive
 release: all
 
 .DEFAULT_GOAL := release

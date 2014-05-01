@@ -30,6 +30,7 @@
         :zdircmp.view.base
         :zdircmp.view.message
         :zdircmp.view.help
+        :zdircmp.view.main
         :zdircmp.util)
   (:shadowing-import-from :zdircmp.view.base :refresh)
   (:export :main))
@@ -49,11 +50,14 @@
 (defconstant +help-window-height+ 3
   "Height of the help window")
 
-(defvar *help-window* nil
+(defvar *help-view* nil
   "Help window")
 
 (defvar *message-view* nil
   "Singleton of the 1-line window for messages")
+
+(defvar *main-view* nil
+  "Main application view")
 
 
 (define-condition on-bad-screen-size (error)
@@ -79,19 +83,19 @@
     (resize *message-view* 0 (1- maxrows) maxcols 1)
     (let ((main-view-height (1- maxrows))
           (main-view-y 0))
-      (when (visible *help-window*)
-        (resize *help-window* 0 0 maxcols +help-window-height+)
+      (when (visible *help-view*)
+        (resize *help-view* 0 0 maxcols +help-window-height+)
         (setf main-view-height (- main-view-height +help-window-height+))
         (setf main-view-y (+ main-view-y +help-window-height+)))
       ;; create the main window
-      (zdircmp.view.main:resize-view 0 main-view-y maxcols main-view-height))))
+      (resize *main-view* 0 main-view-y maxcols main-view-height))))
 
 
 (defun toggle-help-view ()
-  (show *help-window* (not (visible *help-window*)))
+  (show *help-view* (not (visible *help-view*)))
   (process-resize)
   (message *message-view* "~a heading window"
-           (if (visible *help-window*) "Showing" "Hiding")))
+           (if (visible *help-view*) "Showing" "Hiding")))
 
 
 (defun handle-key (key)
@@ -126,7 +130,7 @@
         ((eq key -1)
          (process-resize))
         ;; process others in main view
-        (t (zdircmp.view.main:process-key key))))
+        (t (process-key *main-view* key))))
 
 (defun command-line ()
   (or 
@@ -136,11 +140,11 @@
    nil))
 
 (defun usage (appname)
-  (format *error-output* (concatenate 'string "Usage: " appname " path1 path2~%"))
+  (format *error-output* (concat  "Usage: " appname " path1 path2~%"))
   (format *error-output* "where path1 and path2 - paths to directories to compare~%")
   (sb-ext:exit))
 
-(ql:quickload :swank)
+;(ql:quickload :swank)
 
 (defun main ()
   (let ((cmdargs (command-line)))
@@ -176,45 +180,49 @@
                     (assert-screen-sizes-ok maxcols maxrows)
                     ;; create the messages window
                     (setf *message-view* (make-instance 'message-view
-                                                          :x 0
-                                                          :y (1- *lines*)
-                                                          :width *cols*
-                                                          :height 1))
+                                                        :x 0
+                                                        :y (1- *lines*)
+                                                        :width *cols*
+                                                        :height 1))
                     ;; create a help window if necessary
                     (let ((main-view-height (1- *lines*))
                           (main-view-y 0))
-                      (setf *help-window* (make-instance 'help-view
-                                                         :x 0
-                                                         :y 0
-                                                         :width *cols*
-                                                         :height +help-window-height+
-                                                         :left-path left-path
-                                                         :right-path right-path))
+                      (setf *help-view* (make-instance 'help-view
+                                                       :x 0
+                                                       :y 0
+                                                       :width *cols*
+                                                       :height +help-window-height+
+                                                       :left-path left-path
+                                                       :right-path right-path))
                       (setf main-view-height (- main-view-height
                                                 +help-window-height+)
                             main-view-y (+ main-view-y +help-window-height+))
                       ;; create the main window
-                      (zdircmp.view.main:create-view 0 main-view-y *cols* main-view-height))
-                    ;; create a model node
-                    (with-activity-indicator *message-view*
-                        (zdircmp.view.main:set-model-node 
-                         (zdircmp.model.node::create-root-node
-                          left-path
-                          right-path
-                          :message-function (curry #'message *message-view*)
-                          :activity-function (curry #'update-activity *message-view*))))
-                    ;; keyboard input loop with ESC as an exit condition
-                    (let ((key nil))
-                      (loop while (setf key (getch)) do
-                           (handle-key key))))
+                      (setf *main-view* (make-instance 'main-view
+                                                       :x 0
+                                                       :y main-view-y
+                                                       :width *cols*
+                                                       :height main-view-height))
+                      ;; create a model node
+                      (with-activity-indicator *message-view*
+                        (set-model-node *main-view*
+                                        (zdircmp.model.node::create-root-node
+                                         left-path
+                                         right-path
+                                         :message-function (curry #'message *message-view*)
+                                         :activity-function (curry #'update-activity *message-view*))))
+                      ;; keyboard input loop with ESC as an exit condition
+                      (let ((key nil))
+                        (loop while (setf key (getch)) do
+                             (handle-key key)))))
 
-                ;; error handling: wrong screen size
-                (on-bad-screen-size (what) (format *error-output* (description what)))
-                (on-exit-command (command) (message *message-view* "Exiting..."))))
-            ;; destroy windows
-            (destroy *help-window*)
-            (destroy *message-view*)
-            (zdircmp.view.main:destroy-view))))))
+                    ;; error handling: wrong screen size
+                    (on-bad-screen-size (what) (format *error-output* (description what)))
+                    (on-exit-command (command) (message *message-view* "Exiting..."))))
+              ;; destroy windows
+              (destroy *help-view*)
+              (destroy *message-view*)
+              (destroy *main-view*))))))
 
 
 ;;; main.lisp ends here

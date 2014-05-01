@@ -72,9 +72,10 @@ one of the following: [-] [\] [|] [/] [-] [\] [|] [/]"))
     (wrefresh w)))
 
 
-(defmethod refresh ((v message-view))
- (when (last-message v)
-   (message v (last-message v))))
+(defmethod refresh ((v message-view) &key (force t))
+  (declare (ignore force))
+  (when (last-message v)
+    (message v (last-message v))))
 
 
 (defgeneric show-activity (v show)

@@ -32,13 +32,13 @@
            :y
            :width
            :height
+           :with-window
            :refresh
            :destroy
            :resize
            :visible
-           :show))
-
-(require 'cl-ncurses)
+           :show
+           :process-key))
 
 (in-package :zdircmp.view.base)
 
@@ -50,12 +50,19 @@
    (width :initarg :width :initform 0 :accessor width)
    (height :initarg :height :initform 0 :accessor height)))
 
+(defmacro with-window (v w &body body)
+  "When-let pattern. Set the W to the ncurses window and executes the body"
+  `(let ((,w (window ,v)))
+     (when ,w
+       ,@body)))
+
+
 (defgeneric destroy (v)
   (:documentation "Destroy the associated with view ncurses window"))
 
 (defmethod destroy ((v view))
-  (when (window v)
-    (delwin (window v))
+  (with-window v w
+    (delwin w)
     (setf (window v) nil)))
 
 ;; constructor for the view
@@ -67,24 +74,27 @@
   (wrefresh (window v)))
 
 
-(defgeneric refresh (v)
+(defgeneric refresh (v &key force)
   (:documentation "Refreshes the associated ncurses window"))
 
-(defmethod refresh ((v view))
-  (let ((w (window v)))
-    (when w
-      (wrefresh w))))
+(defmethod refresh ((v view) &key (force t))
+  (declare (ignore force))
+  (with-window v w
+    (wrefresh w)))
 
 (defgeneric resize (v x y width height)
   (:documentation "Process the resize command, resizing the associated ncurses window"))
 
 (defmethod resize ((v view) x y width height)
-  (let ((w (window v)))
-    (when w
-      (wclear w)
-      (wresize w height width)
-      (mvwin w y x)
-      (refresh v))))
+  (with-window v w
+    (setf (x v) x)
+    (setf (y v) y)
+    (setf (width v) width)
+    (setf (height v) height)
+    (wclear w)
+    (wresize w height width)
+    (mvwin w y x)
+    (refresh v)))
 
 (defgeneric visible (v)
   (:documentation "Determines if the window is visible"))
@@ -108,5 +118,9 @@
                            (x v))
               nil))
     (refresh v)))
+
+(defgeneric process-key (v key)
+  (:documentation "Key handler for view"))
+
 
 ;;; base-view.lisp ends here
