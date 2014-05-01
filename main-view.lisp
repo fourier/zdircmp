@@ -97,7 +97,8 @@ generates the function
 
 (defmethod refresh ((v main-view) &key (force t))
   ;; if we have a ncurses window
-  (with-window v w 
+  (with-window v w
+    ;(format *ERROR-OUTPUT* "Refresh called: ~a :force ~a ~%" (class-name (class-of v)) force)
     (wclear w)
     (box w 0 0)
     (when (node v)

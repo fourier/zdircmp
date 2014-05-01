@@ -94,7 +94,7 @@
     (wclear w)
     (wresize w height width)
     (mvwin w y x)
-    (refresh v)))
+    (refresh v :force t)))
 
 (defgeneric visible (v)
   (:documentation "Determines if the window is visible"))
