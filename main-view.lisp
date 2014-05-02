@@ -86,7 +86,8 @@ generates the function
 
 
 (defun message (&rest args)
-  (declare (ignore args)))
+  (apply #'format *ERROR-OUTPUT* args)
+  (format *ERROR-OUTPUT* "~%"))
 
 (defmethod destroy :before ((v view))
   "Clears and destroys the ncurses window"

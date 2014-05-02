@@ -129,8 +129,8 @@
   (let* ((f1 (namestring (file-exists-p file1)))
          (f2 (namestring (file-exists-p file2)))
          (cmd (if (fboundp 'asdf/run-program:run-program)
-                  `(with-output-to-string (str) (asdf/run-program:run-program (list "diff" "-q" ,f1 ,f2) :ignore-error-status t :output str :error-output str))
-                  `(asdf:run-shell-command (format nil "diff -q \"~a\" \"~a\"" ,f1 ,f2)))))
+                  `(asdf/run-program:run-program (list "cmp" "-s" ,f1 ,f2) :ignore-error-status t :output nil :error-output nil)
+                  `(asdf:run-shell-command (format nil "cmp -s \"~a\" \"~a\"" ,f1 ,f2)))))
     (eq (eval cmd) 0)))
 
 
