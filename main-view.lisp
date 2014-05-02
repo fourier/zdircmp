@@ -250,6 +250,23 @@ the screen
             (refresh v))
           (scroll-to-line v parent-line)))))
 
+;; left key event handler - jump to left pane if cursor is on the right
+(defcommand v left
+  (let ((side (cursor-side (cursor v))))
+    (when (eq side 'zdircmp.model.node::right)
+      (setf (cursor-side (cursor v))
+            'zdircmp.model.node::left)
+      (refresh v :force nil))))
+
+;; right key event handler - jump to right pane if cursor is on the left
+(defcommand v right
+  (let ((side (cursor-side (cursor v))))
+    (when (eq side 'zdircmp.model.node::left)
+      (setf (cursor-side (cursor v))
+            'zdircmp.model.node::right)
+      (refresh v :force nil))))
+
+
 (defmethod process-key ((v main-view) key)
   "Keypress dispatcher"
   (cond ((eq key +KEY-UP+)
@@ -257,9 +274,9 @@ the screen
         ((eq key +KEY-DOWN+)
          (process-down v))
         ((eq key +KEY-LEFT+) 
-         (message "LEFT"))
+         (process-left v))
         ((eq key +KEY-RIGHT+) 
-         (message "RIGHT"))
+         (process-right v))
         ((eq key +KEY-ENTER+) 
          (process-return v))
         ((eq key +KEY-SPACE+) 
