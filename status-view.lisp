@@ -1,4 +1,4 @@
-;;; head-view.lisp --- Help text view (window) for directory trees
+;;; status-view.lisp --- 1-line status view (window) for directory trees
 
 ;; Copyright (C) 2014 Alexey Veretennikov
 ;;
@@ -19,19 +19,24 @@
 ;;
 ;;; Commentary:
 
-;; Help View
+;; Message View
 
 ;;; Code:
-(defpackage :zdircmp.view.help
-  (:use ::common-lisp :cl-ncurses :zdircmp.util :zdircmp.view.base)
+(defpackage :zdircmp.view.status
+  (:use ::common-lisp
+        :cl-ncurses
+        :zdircmp.view.base
+        :zdircmp.util
+        :zdircmp.ui.utils)
   ;; shadowing refresh from cl-ncurses, we use the one in base-view
   (:shadowing-import-from :zdircmp.view.base :refresh)
-  (:export :help-view))
+  (:export :status-view))
 
+(require 'cl-ncurses)
 
-(in-package :zdircmp.view.help)
+(in-package :zdircmp.view.status)
 
-(defclass help-view (view)
+(defclass status-view (view)
   ((left-path :initarg :left-path
               :initform nil
               :accessor left-path
@@ -40,20 +45,23 @@
                :initform nil
                :accessor right-path
                :documentation "Path for the right pane"))
-   (:documentation "Help window class"))
+  (:documentation "1-line status view"))
 
 
-(defmethod refresh :before ((v help-view) &key (force t))
+(defmethod refresh ((v status-view) &key (force t))
   (declare (ignore force))
   (with-window v w
-    (mvwprintw w 0 0 "Directory tree differences report")
-    (mvwprintw w 1 0 (concat "Left:  " (left-path v)))
-    (mvwprintw w 2 0 (concat "Right: " (right-path v)))))
-    
+    ;; we need to get the format string like:
+    ;; (format nil "~30,,,'-@<---zdircmp: ~a/~a ~>" "dir1" "dir2")
+    ;; where 30 is the screen width
+    (let* ((format-string (concat "~"
+                                  (format nil "~d" (width v))
+                                  ",,,'-@<---zdircmp: ~a/~a ~>"))
+           (msg (format nil format-string
+                        (file-short-name (left-path v))
+                        (file-short-name (right-path v)))))
+      (with-color-win w :cyan-on-blue
+                      (mvwprintw w 0 0 msg)))
+    (wrefresh w)))
 
-
-
-
-
-
-;;; head-view.lisp ends here
+;;; status-view.lisp ends here

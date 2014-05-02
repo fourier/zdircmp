@@ -30,6 +30,7 @@
         :zdircmp.view.base
         :zdircmp.view.message
         :zdircmp.view.help
+        :zdircmp.view.status
         :zdircmp.view.main
         :zdircmp.util)
   (:shadowing-import-from :zdircmp.view.base :refresh)
@@ -51,10 +52,13 @@
   "Height of the help window")
 
 (defvar *help-view* nil
-  "Help window")
+  "Help view")
 
 (defvar *message-view* nil
-  "Singleton of the 1-line window for messages")
+  "Messages view instance")
+
+(defvar *status-view* nil
+  "Status view")
 
 (defvar *main-view* nil
   "Main application view")
@@ -80,14 +84,17 @@
         (maxrows 0))
     (getmaxyx *stdscr* maxrows maxcols)
     (assert-screen-sizes-ok maxcols maxrows)
+    (wclear *stdscr*)
+    (wrefresh *stdscr*)
     (resize *message-view* 0 (1- maxrows) maxcols 1)
-    (let ((main-view-height (1- maxrows))
+    (resize *status-view* 0 (- maxrows 2) maxcols 1)
+    (let ((main-view-height (- maxrows 2))
           (main-view-y 0))
       (when (visible *help-view*)
         (resize *help-view* 0 0 maxcols +help-window-height+)
-        (setf main-view-height (- main-view-height +help-window-height+))
-        (setf main-view-y (+ main-view-y +help-window-height+)))
-      ;; create the main window
+        (setf main-view-height (- main-view-height +help-window-height+)
+              main-view-y (+ main-view-y +help-window-height+)))
+      ;; resize the main window
       (resize *main-view* 0 main-view-y maxcols main-view-height))))
 
 
@@ -185,7 +192,7 @@
                                                         :width *cols*
                                                         :height 1))
                     ;; create a help window if necessary
-                    (let ((main-view-height (1- *lines*))
+                    (let ((main-view-height (- *lines* 2))
                           (main-view-y 0))
                       (setf *help-view* (make-instance 'help-view
                                                        :x 0
@@ -194,6 +201,13 @@
                                                        :height +help-window-height+
                                                        :left-path left-path
                                                        :right-path right-path))
+                      (setf *status-view* (make-instance 'status-view
+                                                         :x 0
+                                                         :y (- *lines* 2)
+                                                         :width *cols*
+                                                         :height 1
+                                                         :left-path left-path
+                                                         :right-path right-path))
                       (setf main-view-height (- main-view-height
                                                 +help-window-height+)
                             main-view-y (+ main-view-y +help-window-height+))

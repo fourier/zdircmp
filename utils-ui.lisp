@@ -162,6 +162,7 @@ Params: `win' is a window name,
             (:red-on-white '9)
             (:green-on-white '10)
             (:blue-on-white '11)
+            (:cyan-on-blue '12)
             (otherwise '1))))
      (progn
        (cl-ncurses:wattron ,win (cl-ncurses:COLOR-PAIR color-value))
@@ -184,7 +185,8 @@ Params: `win' is a window name,
   (cl-ncurses:init-pair 8 cl-ncurses:COLOR_BLACK cl-ncurses:COLOR_WHITE)
   (cl-ncurses:init-pair 9 cl-ncurses:COLOR_RED cl-ncurses:COLOR_WHITE)
   (cl-ncurses:init-pair 10 cl-ncurses:COLOR_GREEN cl-ncurses:COLOR_WHITE)
-  (cl-ncurses:init-pair 11 cl-ncurses:COLOR_BLUE cl-ncurses:COLOR_WHITE))
+  (cl-ncurses:init-pair 11 cl-ncurses:COLOR_BLUE cl-ncurses:COLOR_WHITE)
+  (cl-ncurses:init-pair 12 cl-ncurses:COLOR_CYAN cl-ncurses:COLOR_BLUE))
 
 
 

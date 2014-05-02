@@ -378,7 +378,7 @@ and redraws all data inside"
 
 (defun color-for-diff (diff)
   (cond ((eq diff 'zdircmp.model.node::diff) :red)
-        ((eq diff 'zdircmp.model.node::new)  :blue)
+        ((eq diff 'zdircmp.model.node::new)  :cyan)
         (t :white)))
 
 (defun inverse-color (color)
