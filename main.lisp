@@ -151,8 +151,6 @@
   (format *error-output* "where path1 and path2 - paths to directories to compare~%")
   (sb-ext:exit))
 
-;(ql:quickload :swank)
-
 (defun main ()
   (let ((cmdargs (command-line)))
     (if (< (length cmdargs) 3)
@@ -188,23 +186,23 @@
                     ;; create the messages window
                     (setf *message-view* (make-instance 'message-view
                                                         :x 0
-                                                        :y (1- *lines*)
-                                                        :width *cols*
+                                                        :y (1- maxrows)
+                                                        :width maxcols
                                                         :height 1))
                     ;; create a help window if necessary
-                    (let ((main-view-height (- *lines* 2))
+                    (let ((main-view-height (- maxrows 2))
                           (main-view-y 0))
                       (setf *help-view* (make-instance 'help-view
                                                        :x 0
                                                        :y 0
-                                                       :width *cols*
+                                                       :width maxcols
                                                        :height +help-window-height+
                                                        :left-path left-path
                                                        :right-path right-path))
                       (setf *status-view* (make-instance 'status-view
                                                          :x 0
-                                                         :y (- *lines* 2)
-                                                         :width *cols*
+                                                         :y (- maxrows 2)
+                                                         :width maxcols
                                                          :height 1
                                                          :left-path left-path
                                                          :right-path right-path))
@@ -215,7 +213,7 @@
                       (setf *main-view* (make-instance 'main-view
                                                        :x 0
                                                        :y main-view-y
-                                                       :width *cols*
+                                                       :width maxcols
                                                        :height main-view-height))
                       ;; create a model node
                       (with-activity-indicator *message-view*
@@ -230,13 +228,13 @@
                         (loop while (setf key (getch)) do
                              (handle-key key)))))
 
-                    ;; error handling: wrong screen size
-                    (on-bad-screen-size (what) (format *error-output* (description what)))
-                    (on-exit-command (command) (message *message-view* "Exiting..."))))
-              ;; destroy windows
-              (destroy *help-view*)
-              (destroy *message-view*)
-              (destroy *main-view*))))))
+                ;; error handling: wrong screen size
+                (on-bad-screen-size (what) (format *error-output* (description what)))
+                (on-exit-command (command) (message *message-view* "Exiting..."))))
+            ;; destroy windows
+            (destroy *help-view*)
+            (destroy *message-view*)
+            (destroy *main-view*))))))
 
 
 ;;; main.lisp ends here
