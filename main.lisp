@@ -48,7 +48,7 @@
 (defconstant +min-screen-height+ 15
   "Minimum supported screen height")
 
-(defconstant +help-window-height+ 3
+(defconstant +help-window-height+ 9
   "Height of the help window")
 
 (defvar *help-view* nil
@@ -99,10 +99,17 @@
 
 
 (defun toggle-help-view ()
-  (show *help-view* (not (visible *help-view*)))
-  (process-resize)
-  (message *message-view* "~a heading window"
-           (if (visible *help-view*) "Showing" "Hiding")))
+  (if (not *help-view*)
+    (let ((maxcols 0)
+          (maxrows 0))
+      (getmaxyx *stdscr* maxrows maxcols)
+      (setf *help-view* (make-instance 'help-view
+                                       :x 0
+                                       :y 0
+                                       :width maxcols
+                                       :height +help-window-height+)))
+    (show *help-view* (not (visible *help-view*))))
+  (process-resize))
 
 
 (defun handle-key (key)
@@ -111,6 +118,7 @@
          (signal 'on-exit-command :text "exit"))
         ((eq key +KEY-F1+)
          (toggle-help-view))
+        #|
         ((eq key +KEY-F2+) 
          (message *message-view* "F2"))
         ((eq key +KEY-F3+) 
@@ -133,6 +141,7 @@
          (message *message-view* "F11"))
         ((eq key +KEY-F12+) 
          (message *message-view* "F12"))
+        |#
         ;; handle resize event
         ((eq key -1)
          (process-resize))
@@ -192,13 +201,6 @@
                     ;; create a help window if necessary
                     (let ((main-view-height (- maxrows 2))
                           (main-view-y 0))
-                      (setf *help-view* (make-instance 'help-view
-                                                       :x 0
-                                                       :y 0
-                                                       :width maxcols
-                                                       :height +help-window-height+
-                                                       :left-path left-path
-                                                       :right-path right-path))
                       (setf *status-view* (make-instance 'status-view
                                                          :x 0
                                                          :y (- maxrows 2)
@@ -206,9 +208,6 @@
                                                          :height 1
                                                          :left-path left-path
                                                          :right-path right-path))
-                      (setf main-view-height (- main-view-height
-                                                +help-window-height+)
-                            main-view-y (+ main-view-y +help-window-height+))
                       ;; create the main window
                       (setf *main-view* (make-instance 'main-view
                                                        :x 0
@@ -223,6 +222,7 @@
                                          right-path
                                          :message-function (curry #'message *message-view*)
                                          :activity-function (curry #'update-activity *message-view*))))
+                      (message *message-view* "Press F1 for quick help, ESC to exit")
                       ;; keyboard input loop with ESC as an exit condition
                       (let ((key nil))
                         (loop while (setf key (getch)) do
