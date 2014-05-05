@@ -31,38 +31,12 @@
 
 (in-package :zdircmp.view.help)
 
-(defstruct point
-  "Point position. LINE is the line number in window, COLUMN is the column.
-Both 0-based"
-  (line 0)
-  (column 0))
-
 
 (defclass help-view (view)
-  ((point-pos :initform (make-point)
-               :accessor point-pos
-               :documentation "Current point position"))
+  ((difftool :initarg :difftool :initform "vimdiff" :accessor difftool))
    (:documentation "Help window class"))
 
 
-(defgeneric goto-point (v &key line col))
-(defmethod goto-point ((v help-view) &key (line (point-line (point-pos v)))
-                                     (col (point-column (point-pos v))))
-  (setf (point-line (point-pos v)) line)
-  (setf (point-column (point-pos v)) col))
-
-
-(defgeneric print-string (v string &key with-color line col))
-(defmethod print-string ((v help-view) string &key (with-color :white) line col)
-  (with-window v w
-               (let ((l (if line line 
-                            (point-line (point-pos v))))
-                     (c (if col col (point-column (point-pos v))))
-                     (size (length string)))
-                 (goto-point v :line l :col c )
-                 (with-color-win w with-color
-                                 (mvwprintw w l c string))
-                 (goto-point v :col (+ c size)))))
 
 (defmethod refresh :before ((v help-view) &key (force t))
   (declare (ignore force))
@@ -82,7 +56,7 @@ Both 0-based"
   (print-string v "Press ")
   (print-string v "ENTER" :with-color :green)
   (print-string v " to open/close directories or start ")  
-  (print-string v "vimdiff" :with-color :red)
+  (print-string v (difftool v) :with-color :red)
   (print-string v " on different files")
   (goto-point v :line 4 :col 0)
   (print-string v "Press ")

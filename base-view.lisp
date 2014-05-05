@@ -38,17 +38,11 @@
            :resize
            :visible
            :show
-           :process-key))
+           :process-key
+           :goto-point
+           :print-string))
 
 (in-package :zdircmp.view.base)
-
-(defclass view ()
-  ;; ncurses window
-  ((window :initform nil :accessor window)
-   (x :initarg :x :initform 0 :accessor x)
-   (y :initarg :y :initform 0 :accessor y)
-   (width :initarg :width :initform 0 :accessor width)
-   (height :initarg :height :initform 0 :accessor height)))
 
 (defmacro with-window (v w &body body)
   "When-let pattern. Set the W to the ncurses window and executes the body"
@@ -56,6 +50,50 @@
      (when ,w
        ,@body)))
 
+
+(defstruct point
+  "Point position. LINE is the line number in window, COLUMN is the column.
+Both 0-based"
+  (line 0)
+  (column 0))
+
+
+(defclass view ()
+  ;; ncurses window
+  ((window :initform nil :accessor window)
+   (x :initarg :x :initform 0 :accessor x)
+   (y :initarg :y :initform 0 :accessor y)
+   (width :initarg :width :initform 0 :accessor width)
+   (height :initarg :height :initform 0 :accessor height)
+   (point :initform (make-point)
+          :accessor point
+          :documentation "Current point position"))
+  (:documentation "Base class for ncurses-based views"))
+
+(defgeneric goto-point (v &key line col))
+(defmethod goto-point ((v view) &key (line (point-line (point v)))
+                                     (col (point-column (point v))))
+  (setf (point-line (point v)) line)
+  (setf (point-column (point v)) col))
+
+
+(defgeneric print-string (v string &key with-color line col))
+(defmethod print-string ((v view) string &key (with-color :white) line col)
+  (with-window v w
+               (let ((l (if line line 
+                            (point-line (point v))))
+                     (c (if col col (point-column (point v))))
+                     (size (length string)))
+                 (goto-point v :line l :col c )
+                 (with-color-win w with-color
+                                 (mvwprintw w l c string))
+                 (goto-point v :col (+ c size)))))
+
+ (defgeneric current-point (v)
+   (:documentation "Returns the tuple (cons line column) of the current point position"))
+(defmethod current-point ((v view))
+  (cons (point-line (point v))
+        (point-column (point v))))
 
 (defgeneric destroy (v)
   (:documentation "Destroy the associated with view ncurses window"))
