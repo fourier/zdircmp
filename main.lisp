@@ -158,7 +158,11 @@
 (defun usage (appname)
   (format *error-output* (concat  "Usage: " appname " path1 path2~%"))
   (format *error-output* "where path1 and path2 - paths to directories to compare~%")
-  (sb-ext:exit))
+  #+SBCL (sb-ext:exit)
+  #+LISPWORKS (lispworks:quit)
+  )
+
+  
 
 (defun main ()
   (let ((cmdargs (command-line)))

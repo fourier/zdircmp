@@ -32,8 +32,6 @@
   (:shadowing-import-from :zdircmp.view.base :refresh)
   (:export :status-view))
 
-(require 'cl-ncurses)
-
 (in-package :zdircmp.view.status)
 
 (defclass status-view (view)

@@ -217,7 +217,10 @@ the screen
               (right (diff-node-right-path node)))
           (def-prog-mode)
           (endwin)
+          #+asdf3
           (asdf/run-program:run-program (list "vimdiff" left right) :ignore-error-status t :output :interactive)
+          #-asdf3
+          (asdf:run-shell-command (format nil "vimdiff \"~a\" \"~a\"" left right))
           (reset-prog-mode)
           (cl-ncurses:refresh))
         (toggle-expand-state-by-line line (not expanded))))

@@ -32,8 +32,6 @@
            :with-activity-indicator
            :update-activity))
 
-(require 'cl-ncurses)
-
 (in-package :zdircmp.view.message)
 
 (defclass message-view (view)
