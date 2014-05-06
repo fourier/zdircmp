@@ -38,7 +38,7 @@
 
 
 
-(defmethod refresh :before ((v help-view) &key (force t))
+(defmethod refresh ((v help-view) &key (force t))
   (declare (ignore force))
   (goto-point v :line 0 :col 0)
   (print-string v "Directory tree differences report tool.")

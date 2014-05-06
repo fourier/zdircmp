@@ -100,11 +100,9 @@ generates the function
   ;; if we have a ncurses window
   (with-window v w
     ;(format *ERROR-OUTPUT* "Refresh called: ~a :force ~a ~%" (class-name (class-of v)) force)
-    (wclear w)
     (box w 0 0)
     (when (node v)
-      (refresh-contents v force))
-    (wrefresh w)))
+      (refresh-contents v force))))
 
 
 (defgeneric window-line-to-tree-line (v            window-line))

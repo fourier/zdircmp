@@ -115,10 +115,16 @@ Both 0-based"
 (defgeneric refresh (v &key force)
   (:documentation "Refreshes the associated ncurses window"))
 
-(defmethod refresh ((v view) &key (force t))
+(defmethod refresh :before ((v view) &key (force t))
+  (declare (ignore force))
+  (with-window v w
+    (wclear w)))
+
+(defmethod refresh :after ((v view) &key (force t))
   (declare (ignore force))
   (with-window v w
     (wrefresh w)))
+
 
 (defgeneric resize (v x y width height)
   (:documentation "Process the resize command, resizing the associated ncurses window"))
