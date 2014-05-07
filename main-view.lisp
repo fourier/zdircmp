@@ -67,9 +67,9 @@ is the side of the cursor - 'zdircmp.model.node::left or 'zdircmp.model.node::ri
   (:documentation "Main application view with directory trees and separator"))
 
 
-(defmacro defcommand (v name &body body)
+(defmacro defcommand ((v name) &body body)
   "Declares the command function. Usage example:
-`(defcommand v up (let ((a 1)) a))
+`(defcommand (v up) (let ((a 1)) a))
 generates the function
 `(DEFMETHOD PROCESS-UP ((V MAIN-VIEW))
   (LET ((A 1))
@@ -96,12 +96,13 @@ generates the function
   (apply #'format *ERROR-OUTPUT* args)
   (format *ERROR-OUTPUT* "~%"))
 
+#|
 (defmethod destroy :before ((v view))
   "Clears and destroys the ncurses window"
   (with-window (v w)
     ;; border with spaces
     (wborder w 32 32 32 32 32 32 32 32)))
-
+|#
 
 (defmethod refresh ((v main-view) &key (force t))
   ;; if we have a ncurses window
@@ -179,7 +180,7 @@ the screen
   (refresh v :force nil))
 
 ;; UP key event handler - move cursor up one line
-(defcommand v up
+(defcommand (v up)
   (let ((cursor-pos (cursor-line (cursor v))))
     ;; if the cursor is not on the first line, just move it up
     (if (> cursor-pos 0)
@@ -190,7 +191,7 @@ the screen
         (scroll-lines v -1))))
 
 ;; DOWN key event handler - move cursor down one line
-(defcommand v down
+(defcommand (v down)
   (let ((cursor-pos (cursor-line (cursor v))))
     (when (/= (+ (start-line v) cursor-pos)
               (1- (tree-number-of-lines)))
@@ -203,15 +204,15 @@ the screen
             (refresh v :force nil))))))
 
 ;; PAGE UP key event handler - scrolls up 1 screen if possible
-(defcommand v pgup
+(defcommand (v pgup)
   (scroll-lines v (- (height v))))
 
 ;; PAGE DOWN key event handler - scrolls down 1 screen if possible"
-(defcommand v pgdn
+(defcommand (v pgdn)
   (scroll-lines v (height v)))
 
 ;; ENTER key event handler - opens/close directories"
-(defcommand v return
+(defcommand (v return)
   (let* ((line (line-number-at-pos v))
          (node (tree-entry-node (tree-entry-at-line line)))
          (expanded (node-expanded-p node))
@@ -232,7 +233,7 @@ the screen
   (refresh v))
 
 ;; TAB key event handler - jump to the other side of the window"
-(defcommand v tab
+(defcommand (v tab)
   (let ((side (cursor-side (cursor v))))
     (if (eq side 'zdircmp.model.node::left)
         (setf (cursor-side (cursor v))
@@ -243,7 +244,7 @@ the screen
 
 ;; Action on Backspace key: to jump to the line of a parent node or
 ;; if the node is directory and expanded - close it
-(defcommand v backspace
+(defcommand (v backspace)
   (let* ((line (line-number-at-pos v))
          (entry (tree-entry-at-line line))
          (parent-line (tree-entry-parent-line entry))
@@ -259,7 +260,7 @@ the screen
           (scroll-to-line v parent-line)))))
 
 ;; left key event handler - jump to left pane if cursor is on the right
-(defcommand v left
+(defcommand (v left)
   (let ((side (cursor-side (cursor v))))
     (when (eq side 'zdircmp.model.node::right)
       (setf (cursor-side (cursor v))
@@ -267,7 +268,7 @@ the screen
       (refresh v :force nil))))
 
 ;; right key event handler - jump to right pane if cursor is on the left
-(defcommand v right
+(defcommand (v right)
   (let ((side (cursor-side (cursor v))))
     (when (eq side 'zdircmp.model.node::left)
       (setf (cursor-side (cursor v))
