@@ -40,11 +40,14 @@
            :show
            :process-key
            :goto-point
-           :print-string))
+           :text-out
+           :vertical-line
+           :horizontal-line
+           :lower-left-corner))
 
 (in-package :zdircmp.view.base)
 
-(defmacro with-window (v w &body body)
+(defmacro with-window ((v w) &body body)
   "When-let pattern. Set the W to the ncurses window and executes the body"
   `(let ((,w (window ,v)))
      (when ,w
@@ -72,25 +75,54 @@ Both 0-based"
 
 (defgeneric goto-point (v &key line col))
 (defmethod goto-point ((v view) &key (line (point-line (point v)))
-                                     (col (point-column (point v))))
+                                  (col (point-column (point v))))
   (setf (point-line (point v)) line)
   (setf (point-column (point v)) col))
 
 
-(defgeneric print-string (v string &key with-color line col))
-(defmethod print-string ((v view) string &key (with-color :white) line col)
-  (with-window v w
-               (let ((l (if line line 
-                            (point-line (point v))))
-                     (c (if col col (point-column (point v))))
-                     (size (length string)))
-                 (goto-point v :line l :col c )
-                 (with-color-win w with-color
-                                 (mvwprintw w l c string))
-                 (goto-point v :col (+ c size)))))
+(defgeneric text-out (v string &key with-color line col))
+(defmethod text-out ((v view) string &key (with-color :white) line col)
+  (with-window (v w)
+    (let* ((l (if line line 
+                  (point-line (point v))))
+           (c (if col col (point-column (point v))))
+           (endpos (+ c (length string))))
+      (goto-point v :line l :col c )
+      (with-color-win (w with-color)
+        (mvwprintw w l c string))
+      (goto-point v :col endpos)
+      endpos)))
 
- (defgeneric current-point (v)
-   (:documentation "Returns the tuple (cons line column) of the current point position"))
+(defgeneric vertical-line (v x y length &key with-color)
+  (:documentation "Draws the vertical line in current window starting from position
+[X,Y] drawing LENGTH rows"))
+
+(defmethod vertical-line ((v view) x y length &key (with-color :white))
+  (with-window (v w)
+    (with-color-win (w with-color)
+      (mvwvline w
+                y          ; y start position
+                x          ; x position
+                ACS_VLINE  ; character
+                length)))) ; number of rows to draw
+
+(defgeneric horizontal-line (v x y length &key with-color)
+  (:documentation "Draws the horizontal line in current window starting from position
+[X,Y] drawing LENGTH columns"))
+
+(defmethod horizontal-line ((v view) x y length &key (with-color :white))
+  (with-window (v w)
+    (with-color-win (w with-color)
+      (mvwhline w
+                y          ; y start position
+                x          ; x position
+                ACS_HLINE  ; character
+                length)))) ; number of columns to draw
+
+
+
+(defgeneric current-point (v)
+  (:documentation "Returns the tuple (cons line column) of the current point position"))
 (defmethod current-point ((v view))
   (cons (point-line (point v))
         (point-column (point v))))
@@ -99,7 +131,7 @@ Both 0-based"
   (:documentation "Destroy the associated with view ncurses window"))
 
 (defmethod destroy ((v view))
-  (with-window v w
+  (with-window (v w)
     (delwin w)
     (setf (window v) nil)))
 
@@ -117,12 +149,12 @@ Both 0-based"
 
 (defmethod refresh :before ((v view) &key (force t))
   (declare (ignore force))
-  (with-window v w
+  (with-window (v w)
     (wclear w)))
 
 (defmethod refresh :after ((v view) &key (force t))
   (declare (ignore force))
-  (with-window v w
+  (with-window (v w)
     (wrefresh w)))
 
 
@@ -130,7 +162,7 @@ Both 0-based"
   (:documentation "Process the resize command, resizing the associated ncurses window"))
 
 (defmethod resize ((v view) x y width height)
-  (with-window v w
+  (with-window (v w)
     (setf (x v) x)
     (setf (y v) y)
     (setf (width v) width)
@@ -150,21 +182,28 @@ Both 0-based"
   (:documentation "Show or hides window depending on SHOW argument"))
 
 (defmethod show ((v view) show)
-  (let ((w (window v)))
-    (when w
-      (wclear w)
-      (wrefresh w)
-      (delwin w))
-    (setf (window v) 
-          (if show (newwin (height v)
-                              (width v)
-                           (y v)
-                           (x v))
-              nil))
-    (refresh v)))
+  (with-window (v w)
+    (wclear w)
+    (wrefresh w)
+    (delwin w))
+  (setf (window v) 
+        (if show (newwin (height v)
+                         (width v)
+                         (y v)
+                         (x v))
+            nil))
+  (refresh v))
 
 (defgeneric process-key (v key)
   (:documentation "Key handler for view"))
 
+
+(defgeneric lower-left-corner (v x y &key with-color)
+  (:documentation "Draw the sign of the lower-left corner of the box"))
+(defmethod lower-left-corner ((v view) x y &key (with-color :white))
+  (with-window (v w)
+    (with-color-win (w with-color)
+      (mvwaddch w y x ACS_LLCORNER))))
+  
 
 ;;; base-view.lisp ends here

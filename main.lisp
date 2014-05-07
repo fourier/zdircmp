@@ -103,11 +103,7 @@
     (let ((maxcols 0)
           (maxrows 0))
       (getmaxyx *stdscr* maxrows maxcols)
-      (setf *help-view* (make-instance 'help-view
-                                       :x 0
-                                       :y 0
-                                       :width maxcols
-                                       :height +help-window-height+)))
+      (setf *help-view* (make-help-view 0 0 maxcols +help-window-height+)))
     (show *help-view* (not (visible *help-view*))))
   (process-resize))
 
@@ -197,29 +193,26 @@
                     ;; verify the screen size
                     (assert-screen-sizes-ok maxcols maxrows)
                     ;; create the messages window
-                    (setf *message-view* (make-instance 'message-view
-                                                        :x 0
-                                                        :y (1- maxrows)
-                                                        :width maxcols
-                                                        :height 1))
+                    (setf *message-view* (make-message-view 0
+                                                            (1- maxrows)
+                                                            maxcols
+                                                            1))
                     ;; create a help window if necessary
                     (let ((main-view-height (- maxrows 2))
                           (main-view-y 0))
-                      (setf *status-view* (make-instance 'status-view
-                                                         :x 0
-                                                         :y (- maxrows 2)
-                                                         :width maxcols
-                                                         :height 1
-                                                         :left-path left-path
-                                                         :right-path right-path))
+                      (setf *status-view* (make-status-view 0
+                                                            (- maxrows 2)
+                                                            maxcols
+                                                            1
+                                                            left-path
+                                                            right-path))
                       ;; create the main window
-                      (setf *main-view* (make-instance 'main-view
-                                                       :x 0
-                                                       :y main-view-y
-                                                       :width maxcols
-                                                       :height main-view-height))
+                      (setf *main-view* (make-main-view 0
+                                                        main-view-y
+                                                        maxcols
+                                                        main-view-height))
                       ;; create a model node
-                      (with-activity-indicator *message-view*
+                      (with-activity-indicator (*message-view*)
                         (set-model-node *main-view*
                                         (zdircmp.model.node::create-root-node
                                          left-path

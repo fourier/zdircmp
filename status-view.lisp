@@ -30,7 +30,7 @@
         :zdircmp.ui.utils)
   ;; shadowing refresh from cl-ncurses, we use the one in base-view
   (:shadowing-import-from :zdircmp.view.base :refresh)
-  (:export :status-view))
+  (:export :make-status-view))
 
 (in-package :zdircmp.view.status)
 
@@ -45,10 +45,18 @@
                :documentation "Path for the right pane"))
   (:documentation "1-line status view"))
 
+(defun make-status-view (x y width height left-path right-path)
+  (make-instance 'status-view
+                 :x x
+                 :y y
+                 :width width
+                 :height height
+                 :left-path left-path
+                 :right-path right-path))
 
 (defmethod refresh ((v status-view) &key (force t))
   (declare (ignore force))
-  (with-window v w
+  (with-window (v w)
     ;; we need to get the format string like:
     ;; (format nil "~30,,,'-@<---zdircmp: ~a/~a ~>" "dir1" "dir2")
     ;; where 30 is the screen width
@@ -58,8 +66,7 @@
            (msg (format nil format-string
                         (file-short-name (left-path v))
                         (file-short-name (right-path v)))))
-      (with-color-win w :cyan-on-blue
-                      (mvwprintw w 0 0 msg)))
+      (text-out v msg :with-color :cyan-on-blue :line 0 :col 0))
     (wrefresh w)))
 
 ;;; status-view.lisp ends here

@@ -26,7 +26,7 @@
   (:use ::common-lisp :cl-ncurses :zdircmp.view.base)
   ;; shadowing refresh from cl-ncurses, we use the one in base-view
   (:shadowing-import-from :zdircmp.view.base :refresh)
-  (:export :message-view
+  (:export :make-message-view
            :message
            :show-activity
            :with-activity-indicator
@@ -50,6 +50,14 @@ one of the following: [-] [\] [|] [/] [-] [\] [|] [/]"))
   "possible statuses of the activity indicator")
 
 
+(defun make-message-view (x y width height)
+  (make-instance 'message-view
+                 :x x
+                 :y y
+                 :width width
+                 :height height))
+
+
 (defgeneric message (v str &rest arguments)
   (:documentation "Prints a message in a message view"))
 
@@ -61,11 +69,8 @@ one of the following: [-] [\] [|] [/] [-] [\] [|] [/]"))
         (w (window v)))
     (wclear w)
     (when (activity-indicator-visible v)
-      (mvwprintw w 0 0
-                 (elt +activity-statuses+ (activity-indicator-state v))))
-    (mvwprintw w 0
-               (if (activity-indicator-visible v) 4 0)
-               msg)
+      (text-out v (elt +activity-statuses+ (activity-indicator-state v)) :col 0))
+    (text-out v msg :col (if (activity-indicator-visible v) 4 0))
     (setf (last-message v) msg)
     (wrefresh w)))
 
@@ -93,7 +98,7 @@ one of the following: [-] [\] [|] [/] [-] [\] [|] [/]"))
     (setf (activity-indicator-state v) (mod (1+ (activity-indicator-state v)) 8))
     (refresh v)))
 
-(defmacro with-activity-indicator (v &body body)
+(defmacro with-activity-indicator ((v) &body body)
   "Turn on activity indicator, perform BODY and turn off activity indicator"
   `(progn
      (zdircmp.view.message::show-activity ,v t)

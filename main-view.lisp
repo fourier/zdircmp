@@ -33,7 +33,7 @@
         :zdircmp.ui.command)
   ;; shadowing refresh from cl-ncurses, we use the one in base-view
   (:shadowing-import-from :zdircmp.view.base :refresh)
-  (:export :main-view
+  (:export :make-main-view
            :process-key
            :set-model-node))
 
@@ -84,6 +84,13 @@ generates the function
          ,@body
          (setf (last-command ,v) (quote ,name) )))))
 
+(defun make-main-view (x y width height)
+  (make-instance 'main-view
+                 :x x
+                 :y y
+                 :width width
+                 :height height))
+
 
 (defun message (&rest args)
   (apply #'format *ERROR-OUTPUT* args)
@@ -91,15 +98,15 @@ generates the function
 
 (defmethod destroy :before ((v view))
   "Clears and destroys the ncurses window"
-  (with-window v w
+  (with-window (v w)
     ;; border with spaces
     (wborder w 32 32 32 32 32 32 32 32)))
 
 
 (defmethod refresh ((v main-view) &key (force t))
   ;; if we have a ncurses window
-  (with-window v w
-    ;(format *ERROR-OUTPUT* "Refresh called: ~a :force ~a ~%" (class-name (class-of v)) force)
+  (with-window (v w)
+                                        ;(format *ERROR-OUTPUT* "Refresh called: ~a :force ~a ~%" (class-name (class-of v)) force)
     (box w 0 0)
     (when (node v)
       (refresh-contents v force))))
@@ -378,19 +385,17 @@ and redraws all data inside"
                                              (1+ (tree-line-to-window-line v line))
                                              offset
                                              side)))))
-    
+
 (defgeneric insert-dummy-cursor-opposite-side (v            window-line offset side))
 (defmethod insert-dummy-cursor-opposite-side ((v main-view) window-line offset side)
-  (with-window v w
-    (let* ((middle (floor (/ (- (width v) 2) 2)))
-           (x-position (+ +left-offset+
-                          (* offset 4)
-                          (if (eq side 'zdircmp.model.node::left) middle 0))))
-      (when (and (= (1- window-line)
-                    (cursor-line (cursor v)))
-                 t)
-        (with-color-win w :black-on-white
-                        (mvwprintw w window-line x-position " "))))))
+  (let* ((middle (floor (/ (- (width v) 2) 2)))
+         (x-position (+ +left-offset+
+                        (* offset 4)
+                        (if (eq side 'zdircmp.model.node::left) middle 0))))
+    (when (and (= (1- window-line)
+                  (cursor-line (cursor v)))
+               t)
+      (text-out v " " :col x-position :line window-line :with-color :black-on-white))))
 
 
 
@@ -421,100 +426,94 @@ and redraws all data inside"
                                 offset
                                 side
                                 diff)
-  (with-window v win
-    ;; if the node is expandable the [+] shall be inserted before
-    ;; and the text position shifted by 4:
-    ;; [+] some text 
-    ;; ^   ^
-    ;; 0   4
-    ;; Also the horizontal line is shorter
-    ;; horizontal line goes from the previous offset - 4 characters
-    (let* ((middle (floor (/ (- (width v) 2) 2)))
-           ;; x-position is the TEXT position. So the [+] sign position or tree leaf width
-           ;; shall be calculated by subtracting from the x-position
-           (x-position (+ +left-offset+     ; 1) offset from window left side (to move out of border)
-                          (* (1+ offset) 4) ; 2) 4 chars for possible [+], and 4 chars per offset
+  ;; if the node is expandable the [+] shall be inserted before
+  ;; and the text position shifted by 4:
+  ;; [+] some text 
+  ;; ^   ^
+  ;; 0   4
+  ;; Also the horizontal line is shorter
+  ;; horizontal line goes from the previous offset - 4 characters
+  (let* ((middle (floor (/ (- (width v) 2) 2)))
+         ;; x-position is the TEXT position. So the [+] sign position or tree leaf width
+         ;; shall be calculated by subtracting from the x-position
+         (x-position (+ +left-offset+     ; 1) offset from window left side (to move out of border)
+                        (* (1+ offset) 4) ; 2) 4 chars for possible [+], and 4 chars per offset
                                         ; 3) shift to the middle for the right-side nodes
-                          (if (eq side 'zdircmp.model.node::right) (1+ middle) 0))) 
-           (height (height v))
-           (window-line (1+ (tree-line-to-window-line v line)))
-           (parent-window-line (tree-line-to-window-line v parent-line))
-           ;; x-position is a text position, so in order to draw the line and
-           ;; write a [+] sign we need to shift it to the left, but don't forget
-           ;; the offset from the border
-           (line-start (- x-position 4 +left-offset+))
-           (line-length 5))
-      (flet ((node-sign (exp x y)
-               (let ((text (format nil "[~a]" (if exp "-" "+"))))
-                 (with-color-win win :white
-                   (mvwprintw win y x text)))))
-        (when expandable
-          ;; horizontal line is shorter for directories by the [+] string
-          (setq line-length (- line-length 3))
-          ;; for expandable nodes insert "[+/-]"
-          ;; guard against out-of window
-          (when (and (> window-line 0)            ; don't draw on top border
-                     (< window-line (1- height))) ; don't draw on bottom border
-            (node-sign expanded (- x-position 4) window-line)))
-        ;; if there is a space to draw
-        (when (> offset 0)
-          ;; draw horizontal line
-          ;; guard against out-of window
-          (when (and (> window-line 0)            ; don't draw on top border
-                     (< window-line (1- height))) ; don't draw on bottom border
-            (mvwhline win window-line line-start  ACS_HLINE line-length))
-          ;; draw vertical line
-          ;; first draw the ` character in the bottom of vertical line
-          ;; any other nodes below will overwrite it with "|" anyways
-          (when (and (> window-line 0)            ; don't draw on top border
-                     (< window-line (1- height))) ; don't draw on bottom border
-            (mvwaddch win window-line (1- line-start) ACS_LLCORNER))
-          ;; then draw a line, starting from the parent line, but don't forget
-          ;; 1) the parent line index is 0-based (and it we need to shift it by 1
-          ;; because of the border), and 2) we draw the line not from the parent
-          ;; line, but from the line below the parent
-          (let* ((start-line (if (< parent-window-line 0) 1 (+ 2 parent-window-line)))
-                 ;; we draw from parent to current excluding parent and current
-                 ;; lines
-                 (len (- window-line start-line))
-                 (end-line (+ start-line len)))
-            (when (> end-line (- height 1))
-              (setf len (- len (- end-line height) 1)))
-            (mvwvline win
-                      start-line        ; y start position
-                      (1- line-start)   ; x position
-                      ACS_VLINE         ; character
-                      len))))           ; number of rows to draw
-      ;; determine if the line is under the cursor
-      (let ((color (color-for-diff diff)))
-        (when (and (= (1- window-line)
-                      (cursor-line (cursor v)))
-                   (eq (cursor-side (cursor v)) side))
-          (setf color (inverse-color color)))
+                        (if (eq side 'zdircmp.model.node::right) (1+ middle) 0))) 
+         (height (height v))
+         (window-line (1+ (tree-line-to-window-line v line)))
+         (parent-window-line (tree-line-to-window-line v parent-line))
+         ;; x-position is a text position, so in order to draw the line and
+         ;; write a [+] sign we need to shift it to the left, but don't forget
+         ;; the offset from the border
+         (line-start (- x-position 4 +left-offset+))
+         (line-length 5))
+    (flet ((node-sign (exp x y)
+             (let ((text (format nil "[~a]" (if exp "-" "+"))))
+               (text-out v text :line y :col x :with-color :white))))
+      (when expandable
+        ;; horizontal line is shorter for directories by the [+] string
+        (setq line-length (- line-length 3))
+        ;; for expandable nodes insert "[+/-]"
         ;; guard against out-of window
         (when (and (> window-line 0)            ; don't draw on top border
                    (< window-line (1- height))) ; don't draw on bottom border
-          (with-color-win win color
-                          (mvwprintw win window-line x-position short-name)))))))
+          (node-sign expanded (- x-position 4) window-line)))
+      ;; if there is a space to draw
+      (when (> offset 0)
+        ;; draw horizontal line
+        ;; guard against out-of window
+        (when (and (> window-line 0)            ; don't draw on top border
+                   (< window-line (1- height))) ; don't draw on bottom border
+          (horizontal-line v line-start window-line line-length))
+        ;; draw vertical line
+        ;; first draw the ` character in the bottom of vertical line
+        ;; any other nodes below will overwrite it with "|" anyways
+        (when (and (> window-line 0)            ; don't draw on top border
+                   (< window-line (1- height))) ; don't draw on bottom border
+          (lower-left-corner v (1- line-start) window-line))
+        ;; then draw a line, starting from the parent line, but don't forget
+        ;; 1) the parent line index is 0-based (and it we need to shift it by 1
+        ;; because of the border), and 2) we draw the line not from the parent
+        ;; line, but from the line below the parent
+        (let* ((start-line (if (< parent-window-line 0) 1 (+ 2 parent-window-line)))
+               ;; we draw from parent to current excluding parent and current
+               ;; lines
+               (len (- window-line start-line))
+               (end-line (+ start-line len)))
+          (when (> end-line (- height 1))
+            (setf len (- len (- end-line height) 1)))
+          (vertical-line v
+                         (1- line-start)   ; x start position
+                         start-line        ; y position
+                         len))))           ; number of rows to draw
+    ;; determine if the line is under the cursor
+    (let ((color (color-for-diff diff)))
+      (when (and (= (1- window-line)
+                    (cursor-line (cursor v)))
+                 (eq (cursor-side (cursor v)) side))
+        (setf color (inverse-color color)))
+      ;; guard against out-of window
+      (when (and (> window-line 0)            ; don't draw on top border
+                 (< window-line (1- height))) ; don't draw on bottom border
+        (text-out v short-name :line window-line :col x-position :with-color color)))))
 
 
 (defgeneric refresh-contents (v do-refresh-model))
 (defmethod refresh-contents ((v main-view) do-refresh-model)
   "Redraws all window's contents - tree(if DO-REFRESH-MODEL is t) and separator"
-  (with-window v w
-    ;; refresh tree in memory
-    (when do-refresh-model
-      (refresh-tree (node v)))
-    ;; draw vertical separator
-    (let* ((middle (floor (/ (- (width v) 2) 2))))
-      (mvwvline w
-                1
-                (1+ middle)
-                (char-code #\|)
-                (- (height v) 2))
-      ;; draw all visible lines
-      (dotimes (line (tree-number-of-lines))
-        (print-entry-in-window v line)))))
+  ;; refresh tree in memory
+  (when do-refresh-model
+    (refresh-tree (node v)))
+  ;; draw vertical separator
+  (let* ((middle (floor (/ (- (width v) 2) 2))))
+    (vertical-line v
+                   (1+ middle)
+                   1
+                   (- (height v) 2))
+    ;; draw all visible lines
+    (dotimes (line (tree-number-of-lines))
+      (print-entry-in-window v line))))
 
 
 ;;; main-view.lisp ends here

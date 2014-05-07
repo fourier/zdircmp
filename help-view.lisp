@@ -26,7 +26,7 @@
   (:use ::common-lisp :cl-ncurses :zdircmp.util :zdircmp.ui.utils :zdircmp.view.base)
   ;; shadowing refresh from cl-ncurses, we use the one in base-view
   (:shadowing-import-from :zdircmp.view.base :refresh)
-  (:export :help-view))
+  (:export :make-help-view))
 
 
 (in-package :zdircmp.view.help)
@@ -34,60 +34,50 @@
 
 (defclass help-view (view)
   ((difftool :initarg :difftool :initform "vimdiff" :accessor difftool))
-   (:documentation "Help window class"))
+  (:documentation "Help window class"))
 
+
+(defun make-help-view (x y width height)
+  (make-instance 'help-view
+                 :x x
+                 :y y
+                 :width width
+                 :height height))
 
 
 (defmethod refresh ((v help-view) &key (force t))
   (declare (ignore force))
   (goto-point v :line 0 :col 0)
-  (print-string v "Directory tree differences report tool.")
+  (text-out v "Directory tree differences report tool.")
   (goto-point v :line 1 :col 0)
-  (print-string v "Navigation: ")
-  (print-string v "LEFT/RIGHT/UP/DOWN" :with-color :green)
-  (print-string v " and ")
-  (print-string v "TAB" :with-color :green)
-  (print-string v " to switch between panes")
+  (text-out v "Navigation: ")
+  (text-out v "LEFT/RIGHT/UP/DOWN" :with-color :green)
+  (text-out v " and ")
+  (text-out v "TAB" :with-color :green)
+  (text-out v " to switch between panes")
   (goto-point v :line 2 :col 0)
-  (print-string v "Press ")
-  (print-string v "ESC" :with-color :green)
-  (print-string v " to exit")
+  (text-out v "Press ")
+  (text-out v "ESC" :with-color :green)
+  (text-out v " to exit")
   (goto-point v :line 3 :col 0)
-  (print-string v "Press ")
-  (print-string v "ENTER" :with-color :green)
-  (print-string v " to open/close directories or start ")  
-  (print-string v (difftool v) :with-color :red)
-  (print-string v " on different files")
+  (text-out v "Press ")
+  (text-out v "ENTER" :with-color :green)
+  (text-out v " to open/close directories or start ")  
+  (text-out v (difftool v) :with-color :red)
+  (text-out v " on different files")
   (goto-point v :line 4 :col 0)
-  (print-string v "Press ")
-  (print-string v "BACKSPACE" :with-color :green)
-  (print-string v " to jump up in tree or close current directory")
+  (text-out v "Press ")
+  (text-out v "BACKSPACE" :with-color :green)
+  (text-out v " to jump up in tree or close current directory")
   (goto-point v :line 5 :col 0)
-  (print-string v "Legend:")
+  (text-out v "Legend:")
   (goto-point v :line 6 :col 0)
-  (print-string v "\"file name\" - files/dirs are the same")
+  (text-out v "\"file name\" - files/dirs are the same")
   (goto-point v :line 7 :col 0)
-  (print-string v "\"file name\"" :with-color :red)
-  (print-string v " - files/dirs are different")
+  (text-out v "\"file name\"" :with-color :red)
+  (text-out v " - files/dirs are different")
   (goto-point v :line 8 :col 0)
-  (print-string v "\"file name\"" :with-color :cyan)
-  (print-string v " - files(or contents of dir) exist only on one pane"))
-  
-
-#|
-  (with-window v w
-    (mvwprintw w 0 0 "Directory tree differences report tool.")
-    (mvwprintw w 1 0 "Navigation: ")
-    (with-color-win w :green
-                    (mvwprintw w 1 (length "Navigation: ") "Point keys and TAB"))
-    (mvwprintw w 2 0 "Press")
-    (with-color-win w :green
-                    (mvwprintw w 2 (length "Press ") "ESC"))))
-    
-  |#  
-
-
-
-
+  (text-out v "\"file name\"" :with-color :cyan)
+  (text-out v " - files(or contents of dir) exist only on one pane"))
 
 ;;; head-view.lisp ends here

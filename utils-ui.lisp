@@ -148,7 +148,7 @@ Params: `win' is a window name,
 
 
 
-(defmacro-export with-color-win (win color &body body)
+(defmacro-export with-color-win ((win color) &body body)
   `(let ((color-value
           (case ,color
             (:white '1)
