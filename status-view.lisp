@@ -47,10 +47,12 @@
 
 (defun make-status-view (x y width height left-path right-path)
   (make-instance 'status-view
-                 :x x
-                 :y y
-                 :width width
-                 :height height
+                 :window-rect
+                 (make-rect
+                  :x x
+                  :y y
+                  :width width
+                  :height height)
                  :left-path left-path
                  :right-path right-path))
 

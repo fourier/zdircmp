@@ -86,10 +86,12 @@ generates the function
 
 (defun make-main-view (x y width height)
   (make-instance 'main-view
-                 :x x
-                 :y y
-                 :width width
-                 :height height))
+                 :window-rect
+                 (make-rect
+                  :x x
+                  :y y
+                  :width width
+                  :height height)))
 
 
 (defun message (&rest args)

@@ -5,11 +5,12 @@
     :licence "GPL"
     :depends-on (#:cl-ncurses #:cl-fad #:swank)
     :components ((:file "util")
+                 (:file "export-util")
                  (:file "command-ui")
                  (:file "constants"
-                        :depends-on ("util"))
+                        :depends-on ("export-util"))
                  (:file "utils-ui"
-                        :depends-on ("util"))
+                        :depends-on ("export-util"))
                  (:file "base-view"
                         :depends-on ("utils-ui"))
                  (:file "message-view" :depends-on ("utils-ui" "base-view"))

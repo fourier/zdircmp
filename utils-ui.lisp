@@ -23,7 +23,7 @@
 
 ;;; Code:
 (defpackage :zdircmp.ui.utils
-  (:use :common-lisp :cl-ncurses :zdircmp.util)
+  (:use :common-lisp :cl-ncurses :zdircmp.util.export)
   (:export :defacs))
 
 (in-package :zdircmp.ui.utils)
@@ -187,6 +187,14 @@ Params: `win' is a window name,
   (cl-ncurses:init-pair 10 cl-ncurses:COLOR_GREEN cl-ncurses:COLOR_WHITE)
   (cl-ncurses:init-pair 11 cl-ncurses:COLOR_BLUE cl-ncurses:COLOR_WHITE)
   (cl-ncurses:init-pair 12 cl-ncurses:COLOR_CYAN cl-ncurses:COLOR_BLUE))
+
+
+(defstruct-export rect
+    "Rectangle for client and nonclient areas"
+  (x 0)
+  (y 0)
+  (width 0)
+  (height 0))
 
 
 

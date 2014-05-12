@@ -39,10 +39,12 @@
 
 (defun make-help-view (x y width height)
   (make-instance 'help-view
-                 :x x
-                 :y y
-                 :width width
-                 :height height))
+                 :window-rect
+                 (make-rect
+                  :x x
+                  :y y
+                  :width width
+                  :height height)))
 
 
 (defmethod refresh ((v help-view) &key (force t))

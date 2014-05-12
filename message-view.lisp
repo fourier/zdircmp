@@ -23,7 +23,7 @@
 
 ;;; Code:
 (defpackage :zdircmp.view.message
-  (:use ::common-lisp :cl-ncurses :zdircmp.view.base)
+  (:use ::common-lisp :cl-ncurses :zdircmp.view.base :zdircmp.ui.utils)
   ;; shadowing refresh from cl-ncurses, we use the one in base-view
   (:shadowing-import-from :zdircmp.view.base :refresh)
   (:export :make-message-view
@@ -52,10 +52,12 @@ one of the following: [-] [\] [|] [/] [-] [\] [|] [/]"))
 
 (defun make-message-view (x y width height)
   (make-instance 'message-view
-                 :x x
-                 :y y
-                 :width width
-                 :height height))
+                 :window-rect
+                 (make-rect
+                  :x x
+                  :y y
+                  :width width
+                  :height height)))
 
 
 (defgeneric message (v str &rest arguments)

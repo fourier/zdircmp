@@ -23,10 +23,7 @@
 
 (defpackage :zdircmp.util
   (:use :common-lisp :cl-fad)
-  (:export :defconstant-export
-           :defun-export
-           :defmacro-export
-           :printable-string   
+  (:export :printable-string   
            :file-short-name
            :car-atom
            :file-directory-p
@@ -36,40 +33,6 @@
            ))
 
 (in-package :zdircmp.util)
-
-;; (eval-when (:load-toplevel :compile-toplevel :execute)
-;;   (require 'cl-fad))
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Set of macros defining exporting symbols
-;; Based on from http://clocc.sourceforge.net/clocc/src/ext/exporting/exporting.lisp
-(defmacro defconstant-export (&whole whole
-                                name initial-value &optional documentation)
-  "Declares and exports the constant. Usage is the same as DEFCONSTANT"
-  (declare (ignore initial-value documentation))
-  `(progn
-     (export ',(or name '(nil)))
-     (defconstant ,name ,@(cddr whole))))
-
-(defun function-block-name (name)
-  (cond ((symbolp name) name)
-        ((and (consp name) (eq (first name) 'setf)
-              (consp (cdr name)) (symbolp (second name)) (null (cddr name)))
-         (second name))
-        (t (error "Not a function name: ~S" name))))
-
-(defmacro defun-export (name lambda-list &body body)
-  "Declares and exports the function. Usage is the same as DEFUN"
-  `(progn
-     (export ',(or (function-block-name name) '(nil)))
-     (cl:defun ,name ,lambda-list ,@body)))
-
-(defmacro defmacro-export (name lambda-list &body body)
-  "Declares and exports the macro. Usage is the same as DEFMACRO"
-  `(progn
-     (export ',(or name '(nil)))
-     (cl:defmacro ,name ,lambda-list ,@body)))
 
 
 ;; Platform detection.

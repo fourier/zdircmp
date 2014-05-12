@@ -23,7 +23,7 @@
 
 ;;; Code:
 (defpackage :zdircmp.constants
-  (:use :common-lisp :zdircmp.util))
+  (:use :common-lisp :zdircmp.util.export))
 
 (in-package :zdircmp.constants)
 

@@ -53,27 +53,55 @@
      (when ,w
        ,@body)))
 
-
 (defstruct point
   "Point position. LINE is the line number in window, COLUMN is the column.
 Both 0-based"
   (line 0)
   (column 0))
 
-
 (defclass view ()
   ;; ncurses window
-  ((window :initform nil :accessor window)
-   (x :initarg :x :initform 0 :accessor x)
-   (y :initarg :y :initform 0 :accessor y)
-   (width :initarg :width :initform 0 :accessor width)
-   (height :initarg :height :initform 0 :accessor height)
+  ((window :initform nil :reader window)
+   (window-rect :initarg :window-rect :reader window-rect)
+   (client-rect :reader client-rect)
    (point :initform (make-point)
           :accessor point
           :documentation "Current point position"))
   (:documentation "Base class for ncurses-based views"))
 
-(defgeneric goto-point (v &key line col))
+(defgeneric x (v)
+  (:documentation "X view position in global system"))
+(defmethod x ((v view))
+  (rect-x (window-rect v)))
+
+(defgeneric y (v)
+  (:documentation "Y view position in global system"))
+(defmethod y ((v view))
+  (rect-y (window-rect v)))
+
+(defgeneric width (v)
+  (:documentation "View width"))
+(defmethod width ((v view))
+  (rect-width (window-rect v)))
+
+(defgeneric height (v)
+  (:documentation "View hegiht"))
+(defmethod height ((v view))
+  (rect-height (window-rect v)))
+
+;; constructor for the view
+(defmethod initialize-instance :after ((v view) &rest args)
+  ;; ignore unused args warning
+  (declare (ignore args))
+  (with-slots (window window-rect client-rect) v
+    (setf window (newwin (height v) (width v) (y v) (x v)))
+    (setf client-rect (copy-rect window-rect))
+    (refresh v)
+    (wrefresh (window v))))
+
+
+(defgeneric goto-point (v &key line col)
+  (:documentation "Move point to the position LINE,COL in client coordinate system"))
 (defmethod goto-point ((v view) &key (line (point-line (point v)))
                                   (col (point-column (point v))))
   (setf (point-line (point v)) line)
@@ -132,17 +160,9 @@ Both 0-based"
 
 (defmethod destroy ((v view))
   (with-window (v w)
-    (delwin w)
-    (setf (window v) nil)))
-
-;; constructor for the view
-(defmethod initialize-instance :after ((v view) &rest args)
-  ;; ignore unused args warning
-  (declare (ignore args))
-  (setf (window v) (newwin (height v) (width v) (y v) (x v)))
-  (refresh v)
-  (wrefresh (window v)))
-
+    (with-slots (window) v
+      (delwin w)
+      (setf window nil))))
 
 (defgeneric refresh (v &key force)
   (:documentation "Refreshes the associated ncurses window"))
@@ -163,14 +183,17 @@ Both 0-based"
 
 (defmethod resize ((v view) x y width height)
   (with-window (v w)
-    (setf (x v) x)
-    (setf (y v) y)
-    (setf (width v) width)
-    (setf (height v) height)
-    (wclear w)
-    (wresize w height width)
-    (mvwin w y x)
-    (refresh v :force t)))
+    (with-slots (window-rect) v
+      (setf window-rect
+            (make-rect
+             :x x
+             :y y
+             :width width
+             :height height))
+      (wclear w)
+      (wresize w height width)
+      (mvwin w y x)
+      (refresh v :force t))))
 
 (defgeneric visible (v)
   (:documentation "Determines if the window is visible"))
@@ -182,17 +205,18 @@ Both 0-based"
   (:documentation "Show or hides window depending on SHOW argument"))
 
 (defmethod show ((v view) show)
-  (with-window (v w)
-    (wclear w)
-    (wrefresh w)
-    (delwin w))
-  (setf (window v) 
-        (if show (newwin (height v)
-                         (width v)
-                         (y v)
-                         (x v))
-            nil))
-  (refresh v))
+  (with-slots (window) v
+    (with-window (v w)
+      (wclear w)
+      (wrefresh w)
+      (delwin w))
+    (setf window 
+          (if show (newwin (height v)
+                           (width v)
+                           (y v)
+                           (x v))
+              nil))
+    (refresh v)))
 
 (defgeneric process-key (v key)
   (:documentation "Key handler for view"))
