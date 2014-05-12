@@ -13,6 +13,8 @@
                         :depends-on ("export-util"))
                  (:file "base-view"
                         :depends-on ("utils-ui"))
+                 (:file "bordered-view"
+                        :depends-on ("utils-ui" "base-view"))
                  (:file "message-view" :depends-on ("utils-ui" "base-view"))
                  (:file "status-view" :depends-on ("util" "utils-ui" "base-view"))
                  (:file "help-view" :depends-on ("util" "utils-ui" "base-view"))

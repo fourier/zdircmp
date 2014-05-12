@@ -29,6 +29,7 @@
         :zdircmp.model.tree
         :zdircmp.constants
         :zdircmp.view.base
+        :zdircmp.view.bordered
         :zdircmp.ui.utils
         :zdircmp.ui.command)
   ;; shadowing refresh from cl-ncurses, we use the one in base-view
@@ -49,7 +50,7 @@ is the side of the cursor - 'zdircmp.model.node::left or 'zdircmp.model.node::ri
   (side 'zdircmp.model.node::left))
 
 
-(defclass main-view (view)
+(defclass main-view (bordered-view)
   ((node :initarg node
          :initform nil
          :accessor node

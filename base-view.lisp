@@ -28,8 +28,8 @@
   (:shadow :refresh)
   (:export :view
            :window
-           :x
-           :y
+           :window-rect
+           :client-rect
            :width
            :height
            :with-window
@@ -60,10 +60,12 @@ Both 0-based"
   (column 0))
 
 (defclass view ()
-  ;; ncurses window
-  ((window :initform nil :reader window)
-   (window-rect :initarg :window-rect :reader window-rect)
-   (client-rect :reader client-rect)
+  ((window :initform nil :reader window
+           :documentation "NCurses window")
+   (window-rect :initarg :window-rect :reader window-rect
+                :documentation "Non-client window rect in screen coordinate system")
+   (client-rect :reader client-rect
+                :documentation "Client window rect in window coordinate system")
    (point :initform (make-point)
           :accessor point
           :documentation "Current point position"))
@@ -89,15 +91,25 @@ Both 0-based"
 (defmethod height ((v view))
   (rect-height (window-rect v)))
 
+(defgeneric update-client-rect (v)
+  (:documentation "Updates the client rect after resize. Should be implemented
+in classes which use not default client rect"))
+
 ;; constructor for the view
 (defmethod initialize-instance :after ((v view) &rest args)
   ;; ignore unused args warning
   (declare (ignore args))
-  (with-slots (window window-rect client-rect) v
+  (with-slots (window window-rect) v
     (setf window (newwin (height v) (width v) (y v) (x v)))
-    (setf client-rect (copy-rect window-rect))
+    (update-client-rect v)
     (refresh v)
     (wrefresh (window v))))
+
+(defmethod update-client-rect ((v view))
+  (format *error-output* "view::update-client-rect ~%")
+  (with-slots (window-rect client-rect) v
+    (setf client-rect (make-rect :width (rect-width window-rect)
+                                 :height (rect-height window-rect)))))
 
 
 (defgeneric goto-point (v &key line col)
@@ -109,17 +121,20 @@ Both 0-based"
 
 
 (defgeneric text-out (v string &key with-color line col))
-(defmethod text-out ((v view) string &key (with-color :white) line col)
-  (with-window (v w)
-    (let* ((l (if line line 
-                  (point-line (point v))))
-           (c (if col col (point-column (point v))))
-           (endpos (+ c (length string))))
-      (goto-point v :line l :col c )
-      (with-color-win (w with-color)
-        (mvwprintw w l c string))
-      (goto-point v :col endpos)
-      endpos)))
+(defmethod text-out ((v view) string &key (with-color :white)
+                                       (line (point-line (point v)))
+                                       (col (point-column (point v))))
+  (let ((client-l (rect-y (client-rect v)))
+        (client-c (rect-x (client-rect v))))
+    (with-window (v w)
+      (let* ((l (+ client-l line))              ; adjust to client coordinates
+             (c (+ client-c col))              ; adjust to client coordinates
+             (endpos (+ c (length string))))
+        (goto-point v :line line :col col )
+        (with-color-win (w with-color)
+          (mvwprintw w l c string))
+        (goto-point v :col endpos)
+        endpos))))
 
 (defgeneric vertical-line (v x y length &key with-color)
   (:documentation "Draws the vertical line in current window starting from position
@@ -128,11 +143,13 @@ Both 0-based"
 (defmethod vertical-line ((v view) x y length &key (with-color :white))
   (with-window (v w)
     (with-color-win (w with-color)
-      (mvwvline w
-                y          ; y start position
-                x          ; x position
-                ACS_VLINE  ; character
-                length)))) ; number of rows to draw
+      (let ((client-x (+ x (rect-x (client-rect v))))
+            (client-y (+ y (rect-y (client-rect v)))))
+        (mvwvline w
+                  client-y    ; y start position
+                  client-x    ; x position
+                  ACS_VLINE   ; character
+                  length))))) ; number of rows to draw
 
 (defgeneric horizontal-line (v x y length &key with-color)
   (:documentation "Draws the horizontal line in current window starting from position
@@ -141,11 +158,13 @@ Both 0-based"
 (defmethod horizontal-line ((v view) x y length &key (with-color :white))
   (with-window (v w)
     (with-color-win (w with-color)
-      (mvwhline w
-                y          ; y start position
-                x          ; x position
-                ACS_HLINE  ; character
-                length)))) ; number of columns to draw
+      (let ((client-x (+ x (rect-x (client-rect v))))
+            (client-y (+ y (rect-y (client-rect v)))))
+        (mvwhline w
+                  client-y    ; y start position
+                  client-x    ; x position
+                  ACS_HLINE   ; character
+                  length))))) ; number of columns to draw
 
 
 
@@ -183,13 +202,14 @@ Both 0-based"
 
 (defmethod resize ((v view) x y width height)
   (with-window (v w)
-    (with-slots (window-rect) v
+    (with-slots (window-rect client-rect) v
       (setf window-rect
             (make-rect
              :x x
              :y y
              :width width
              :height height))
+      (update-client-rect v)
       (wclear w)
       (wresize w height width)
       (mvwin w y x)
@@ -225,9 +245,11 @@ Both 0-based"
 (defgeneric lower-left-corner (v x y &key with-color)
   (:documentation "Draw the sign of the lower-left corner of the box"))
 (defmethod lower-left-corner ((v view) x y &key (with-color :white))
-  (with-window (v w)
-    (with-color-win (w with-color)
-      (mvwaddch w y x ACS_LLCORNER))))
-  
+  (let ((client-x (+ x (rect-x (client-rect v))))
+        (client-y (+ y (rect-y (client-rect v)))))
+    (with-window (v w)
+      (with-color-win (w with-color)
+        (mvwaddch w client-y client-x ACS_LLCORNER)))))
+
 
 ;;; base-view.lisp ends here
