@@ -40,7 +40,7 @@
 
 (in-package :zdircmp.view.main)
 
-(defconstant +left-offset+ 2)
+(defconstant +left-offset+ 1)
 
 
 (defstruct cursor
@@ -137,9 +137,9 @@ May be negative or more than window size"
 (defmethod line-visible-p ((v main-view) line)
   "Returns t if the tree-line is visible in the current screen"
   (let ((window-line (tree-line-to-window-line v line))
-        (max-line (1- (height v))))
+        (max-line (1- (rect-height (client-rect v)))))
     (and (>= window-line 0)
-         (< window-line max-line))))
+         (<= window-line max-line))))
 
 (defun get-new-position (number-of-lines start-line height tree-size)
   "Calculate the new start screen line by given NUMBER-OF-LINES to scroll,
@@ -156,7 +156,7 @@ in the buffer"
   "Scrolls the current window to NUMBER-OF-LINES"
   (let ((new-position (get-new-position number-of-lines
                                         (start-line v)
-                                        (- (height v) 2)
+                                        (rect-height (client-rect v))
                                         (tree-number-of-lines))))
     (setf (start-line v) new-position)
     (refresh v :force nil)))
@@ -199,7 +199,7 @@ the screen
     (when (/= (+ (start-line v) cursor-pos)
               (1- (tree-number-of-lines)))
       ;; if the cursor is on the last line, scroll down, cursor is on the same place
-      (if (= cursor-pos (- (height v) 3))
+      (if (= cursor-pos (1- (rect-height (client-rect v))))
           (scroll-lines v 1)
           (progn
             ;; otherwise update its position
@@ -386,17 +386,18 @@ and redraws all data inside"
                                side
                                diff)
           (insert-dummy-cursor-opposite-side v
-                                             (1+ (tree-line-to-window-line v line))
+                                             (tree-line-to-window-line v line)
                                              offset
                                              side)))))
 
 (defgeneric insert-dummy-cursor-opposite-side (v            window-line offset side))
 (defmethod insert-dummy-cursor-opposite-side ((v main-view) window-line offset side)
-  (let* ((middle (floor (/ (- (width v) 2) 2)))
+  (let* ((w (rect-width (client-rect v)))
+         (middle (floor (/ w 2)))
          (x-position (+ +left-offset+
                         (* offset 4)
                         (if (eq side 'zdircmp.model.node::left) middle 0))))
-    (when (and (= (1- window-line)
+    (when (and (= window-line
                   (cursor-line (cursor v)))
                t)
       (text-out v " " :col x-position :line window-line :with-color :black-on-white))))
@@ -437,15 +438,18 @@ and redraws all data inside"
   ;; 0   4
   ;; Also the horizontal line is shorter
   ;; horizontal line goes from the previous offset - 4 characters
-  (let* ((middle (floor (/ (- (width v) 2) 2)))
+  (let* ((w (rect-width (client-rect v)))
+         (middle (floor (/ w 2)))
          ;; x-position is the TEXT position. So the [+] sign position or tree leaf width
          ;; shall be calculated by subtracting from the x-position
          (x-position (+ +left-offset+     ; 1) offset from window left side (to move out of border)
                         (* (1+ offset) 4) ; 2) 4 chars for possible [+], and 4 chars per offset
                                         ; 3) shift to the middle for the right-side nodes
-                        (if (eq side 'zdircmp.model.node::right) (1+ middle) 0))) 
-         (height (height v))
-         (window-line (1+ (tree-line-to-window-line v line)))
+                        (if (eq side 'zdircmp.model.node::right)
+                            (+ +left-offset+ middle)
+                            0))) 
+         (height (rect-height (client-rect v)))
+         (window-line (tree-line-to-window-line v line))
          (parent-window-line (tree-line-to-window-line v parent-line))
          ;; x-position is a text position, so in order to draw the line and
          ;; write a [+] sign we need to shift it to the left, but don't forget
@@ -459,37 +463,30 @@ and redraws all data inside"
         ;; horizontal line is shorter for directories by the [+] string
         (setq line-length (- line-length 3))
         ;; for expandable nodes insert "[+/-]"
-        ;; guard against out-of window
-        (when (and (> window-line 0)            ; don't draw on top border
-                   (< window-line (1- height))) ; don't draw on bottom border
-          (node-sign expanded (- x-position 4) window-line)))
+          (node-sign expanded (- x-position 4) window-line))
       ;; if there is a space to draw
       (when (> offset 0)
         ;; draw horizontal line
-        ;; guard against out-of window
-        (when (and (> window-line 0)            ; don't draw on top border
-                   (< window-line (1- height))) ; don't draw on bottom border
-          (horizontal-line v line-start window-line line-length))
+          (horizontal-line v line-start window-line line-length)
         ;; draw vertical line
         ;; first draw the ` character in the bottom of vertical line
         ;; any other nodes below will overwrite it with "|" anyways
-        (when (and (> window-line 0)            ; don't draw on top border
-                   (< window-line (1- height))) ; don't draw on bottom border
-          (lower-left-corner v (1- line-start) window-line))
+          (lower-left-corner v line-start window-line)
         ;; then draw a line, starting from the parent line, but don't forget
-        ;; 1) the parent line index is 0-based (and it we need to shift it by 1
-        ;; because of the border), and 2) we draw the line not from the parent
+        ;; 1) the parent line is out of the window, start with y = 0, and
+        ;; 2) we draw the line not from the parent
         ;; line, but from the line below the parent
-        (let* ((start-line (if (< parent-window-line 0) 1 (+ 2 parent-window-line)))
+        (let* ((start-y-position
+                (if (< parent-window-line 0) 0 (1+ parent-window-line)))
                ;; we draw from parent to current excluding parent and current
                ;; lines
-               (len (- window-line start-line))
-               (end-line (+ start-line len)))
-          (when (> end-line (- height 1))
+               (len (- window-line start-y-position))
+               (end-line (+ start-y-position len)))
+          (when (> end-line height)
             (setf len (- len (- end-line height) 1)))
           (vertical-line v
-                         (1- line-start)   ; x start position
-                         start-line        ; y position
+                         line-start        ; x start position
+                         start-y-position  ; y position
                          len))))           ; number of rows to draw
     ;; determine if the line is under the cursor
     (let ((color (color-for-diff diff)))
@@ -509,15 +506,14 @@ and redraws all data inside"
   ;; refresh tree in memory
   (when do-refresh-model
     (refresh-tree (node v)))
-  ;; draw vertical separator
-  (let* ((middle (floor (/ (- (width v) 2) 2))))
-    (vertical-line v
-                   (1+ middle)
-                   1
-                   (- (height v) 2))
-    ;; draw all visible lines
-    (dotimes (line (tree-number-of-lines))
-      (print-entry-in-window v line))))
+  (let ((w (rect-width (client-rect v)))
+        (h (rect-height (client-rect v))))
+    ;; draw vertical separator
+    (let* ((middle (floor (/ w 2))))
+      (vertical-line v middle 0 h)
+      ;; draw all visible lines
+      (dotimes (line (tree-number-of-lines))
+        (print-entry-in-window v line)))))
 
 
 ;;; main-view.lisp ends here
