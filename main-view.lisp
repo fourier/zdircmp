@@ -184,99 +184,99 @@ the screen
 
 ;; UP key event handler - move cursor up one line
 (defcommand (v up)
-  (let ((cursor-pos (cursor-line (cursor v))))
-    ;; if the cursor is not on the first line, just move it up
-    (if (> cursor-pos 0)
-        (progn
-          (setf (cursor-line (cursor v)) (1- cursor-pos))
-          (refresh v :force nil))
-        ;; otherwise - cursor is on the same place, but window moves up
-        (scroll-lines v -1))))
+    (let ((cursor-pos (cursor-line (cursor v))))
+      ;; if the cursor is not on the first line, just move it up
+      (if (> cursor-pos 0)
+          (progn
+            (setf (cursor-line (cursor v)) (1- cursor-pos))
+            (refresh v :force nil))
+          ;; otherwise - cursor is on the same place, but window moves up
+          (scroll-lines v -1))))
 
 ;; DOWN key event handler - move cursor down one line
 (defcommand (v down)
-  (let ((cursor-pos (cursor-line (cursor v))))
-    (when (/= (+ (start-line v) cursor-pos)
-              (1- (tree-number-of-lines)))
-      ;; if the cursor is on the last line, scroll down, cursor is on the same place
-      (if (= cursor-pos (1- (rect-height (client-rect v))))
-          (scroll-lines v 1)
-          (progn
-            ;; otherwise update its position
-            (setf (cursor-line (cursor v)) (1+ cursor-pos))
-            (refresh v :force nil))))))
+    (let ((cursor-pos (cursor-line (cursor v))))
+      (when (/= (+ (start-line v) cursor-pos)
+                (1- (tree-number-of-lines)))
+        ;; if the cursor is on the last line, scroll down, cursor is on the same place
+        (if (= cursor-pos (1- (rect-height (client-rect v))))
+            (scroll-lines v 1)
+            (progn
+              ;; otherwise update its position
+              (setf (cursor-line (cursor v)) (1+ cursor-pos))
+              (refresh v :force nil))))))
 
 ;; PAGE UP key event handler - scrolls up 1 screen if possible
 (defcommand (v pgup)
-  (scroll-lines v (- (height v))))
+    (scroll-lines v (- (height v))))
 
 ;; PAGE DOWN key event handler - scrolls down 1 screen if possible"
 (defcommand (v pgdn)
-  (scroll-lines v (height v)))
+    (scroll-lines v (height v)))
 
 ;; ENTER key event handler - opens/close directories"
 (defcommand (v return)
-  (let* ((line (line-number-at-pos v))
-         (node (tree-entry-node (tree-entry-at-line line)))
-         (expanded (node-expanded-p node))
-         (node-is-file (not (diff-node-is-directory node))))
-    (if (and node-is-file
-             (eq (diff-node-side node) 'zdircmp.model.node::both))
-        (let ((left (diff-node-left-path node))
-              (right (diff-node-right-path node)))
-          (def-prog-mode)
-          (endwin)
-          #+asdf3
-          (asdf/run-program:run-program (list "vimdiff" left right) :ignore-error-status t :output :interactive)
-          #-asdf3
-          (asdf:run-shell-command (format nil "vimdiff \"~a\" \"~a\"" left right))
-          (reset-prog-mode)
-          (cl-ncurses:refresh))
-        (toggle-expand-state-by-line line (not expanded))))
+    (let* ((line (line-number-at-pos v))
+           (node (tree-entry-node (tree-entry-at-line line)))
+           (expanded (node-expanded-p node))
+           (node-is-file (not (diff-node-is-directory node))))
+      (if (and node-is-file
+               (eq (diff-node-side node) 'zdircmp.model.node::both))
+          (let ((left (diff-node-left-path node))
+                (right (diff-node-right-path node)))
+            (def-prog-mode)
+            (endwin)
+            #+asdf3
+            (asdf/run-program:run-program (list "vimdiff" left right) :ignore-error-status t :output :interactive)
+            #-asdf3
+            (asdf:run-shell-command (format nil "vimdiff \"~a\" \"~a\"" left right))
+            (reset-prog-mode)
+            (cl-ncurses:refresh))
+          (toggle-expand-state-by-line line (not expanded))))
   (refresh v))
 
 ;; TAB key event handler - jump to the other side of the window"
 (defcommand (v tab)
-  (let ((side (cursor-side (cursor v))))
-    (if (eq side 'zdircmp.model.node::left)
-        (setf (cursor-side (cursor v))
-              'zdircmp.model.node::right)
-        (setf (cursor-side (cursor v))
-              'zdircmp.model.node::left)))
+    (let ((side (cursor-side (cursor v))))
+      (if (eq side 'zdircmp.model.node::left)
+          (setf (cursor-side (cursor v))
+                'zdircmp.model.node::right)
+          (setf (cursor-side (cursor v))
+                'zdircmp.model.node::left)))
   (refresh v :force nil))
 
 ;; Action on Backspace key: to jump to the line of a parent node or
 ;; if the node is directory and expanded - close it
 (defcommand (v backspace)
-  (let* ((line (line-number-at-pos v))
-         (entry (tree-entry-at-line line))
-         (parent-line (tree-entry-parent-line entry))
-         (is-dir (diff-node-is-directory (tree-entry-node entry)))
-         (expanded (node-expanded-p (tree-entry-node entry))))
-    ;; perform action on any node except the root node
-    (when (/= parent-line line)
-      (if (and is-dir
-               expanded)
-          (progn
-            (toggle-expand-state-by-line line nil)
-            (refresh v))
-          (scroll-to-line v parent-line)))))
+    (let* ((line (line-number-at-pos v))
+           (entry (tree-entry-at-line line))
+           (parent-line (tree-entry-parent-line entry))
+           (is-dir (diff-node-is-directory (tree-entry-node entry)))
+           (expanded (node-expanded-p (tree-entry-node entry))))
+      ;; perform action on any node except the root node
+      (when (/= parent-line line)
+        (if (and is-dir
+                 expanded)
+            (progn
+              (toggle-expand-state-by-line line nil)
+              (refresh v))
+            (scroll-to-line v parent-line)))))
 
 ;; left key event handler - jump to left pane if cursor is on the right
 (defcommand (v left)
-  (let ((side (cursor-side (cursor v))))
-    (when (eq side 'zdircmp.model.node::right)
-      (setf (cursor-side (cursor v))
-            'zdircmp.model.node::left)
-      (refresh v :force nil))))
+    (let ((side (cursor-side (cursor v))))
+      (when (eq side 'zdircmp.model.node::right)
+        (setf (cursor-side (cursor v))
+              'zdircmp.model.node::left)
+        (refresh v :force nil))))
 
 ;; right key event handler - jump to right pane if cursor is on the left
 (defcommand (v right)
-  (let ((side (cursor-side (cursor v))))
-    (when (eq side 'zdircmp.model.node::left)
-      (setf (cursor-side (cursor v))
-            'zdircmp.model.node::right)
-      (refresh v :force nil))))
+    (let ((side (cursor-side (cursor v))))
+      (when (eq side 'zdircmp.model.node::left)
+        (setf (cursor-side (cursor v))
+              'zdircmp.model.node::right)
+        (refresh v :force nil))))
 
 
 (defmethod process-key ((v main-view) key)
@@ -454,8 +454,11 @@ and redraws all data inside"
          ;; x-position is a text position, so in order to draw the line and
          ;; write a [+] sign we need to shift it to the left, but don't forget
          ;; the offset from the border
-         (line-start (- x-position 4 +left-offset+))
-         (line-length 5))
+         (line-length 5)
+         ;; where the horizontal line starts
+         ;; it is the text position - line length - 1 (for space between
+         ;; the line and text)
+         (line-start (- x-position line-length 1)))
     (flet ((node-sign (exp x y)
              (let ((text (format nil "[~a]" (if exp "-" "+"))))
                (text-out v text :line y :col x :with-color :white))))
@@ -463,41 +466,32 @@ and redraws all data inside"
         ;; horizontal line is shorter for directories by the [+] string
         (setq line-length (- line-length 3))
         ;; for expandable nodes insert "[+/-]"
-          (node-sign expanded (- x-position 4) window-line))
-      ;; if there is a space to draw
-      (when (> offset 0)
-        ;; draw horizontal line
-          (horizontal-line v line-start window-line line-length)
-        ;; draw vertical line
-        ;; first draw the ` character in the bottom of vertical line
-        ;; any other nodes below will overwrite it with "|" anyways
-          (lower-left-corner v line-start window-line)
-        ;; then draw a line, starting from the parent line, but don't forget
-        ;; 1) the parent line is out of the window, start with y = 0, and
-        ;; 2) we draw the line not from the parent
-        ;; line, but from the line below the parent
-        (let* ((start-y-position
-                (if (< parent-window-line 0) 0 (1+ parent-window-line)))
-               ;; we draw from parent to current excluding parent and current
-               ;; lines
-               (len (- window-line start-y-position))
-               (end-line (+ start-y-position len)))
-          (when (> end-line height)
-            (setf len (- len (- end-line height) 1)))
-          (vertical-line v
-                         line-start        ; x start position
-                         start-y-position  ; y position
-                         len))))           ; number of rows to draw
-    ;; determine if the line is under the cursor
-    (let ((color (color-for-diff diff)))
-      (when (and (= (1- window-line)
-                    (cursor-line (cursor v)))
-                 (eq (cursor-side (cursor v)) side))
-        (setf color (inverse-color color)))
-      ;; guard against out-of window
-      (when (and (> window-line 0)            ; don't draw on top border
-                 (< window-line (1- height))) ; don't draw on bottom border
-        (text-out v short-name :line window-line :col x-position :with-color color)))))
+        (node-sign expanded (- x-position 4) window-line)))
+    ;; if there is a space to draw
+    (when (> offset 0)
+      ;; draw horizontal line
+      (horizontal-line v line-start window-line line-length)
+      ;; draw vertical line
+      ;; first draw the ` character in the bottom of vertical line
+      ;; any other nodes below will overwrite it with "|" anyways
+      (lower-left-corner v (1- line-start) window-line)
+      ;; then draw a line, starting from the parent line, 
+      ;; but don't forget we draw the line not from the parent
+      ;; line, but from the line below the parent
+      (let* ((start-y-position (1+ parent-window-line))
+             (len (- window-line start-y-position))
+             (end-line (+ start-y-position len)))
+        (vertical-line v
+                       (1- line-start)   ; x start position
+                       start-y-position  ; y position
+                       len)))            ; number of rows to draw
+  ;; determine if the line is under the cursor
+  (let ((color (color-for-diff diff)))
+    (when (and (= window-line
+                  (cursor-line (cursor v)))
+               (eq (cursor-side (cursor v)) side))
+      (setf color (inverse-color color)))
+    (text-out v short-name :line window-line :col x-position :with-color color))))
 
 
 (defgeneric refresh-contents (v do-refresh-model))

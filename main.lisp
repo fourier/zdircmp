@@ -166,7 +166,7 @@
         (usage (car cmdargs))
         (let ((left-path (second cmdargs))
               (right-path (third cmdargs)))
-          (swank:create-server :port 4006)
+          ;(swank:create-server :port 4006)
           (with-ncurses
               ;; no caching of the input
               (cbreak)

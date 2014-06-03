@@ -299,7 +299,7 @@ the rest is the combined list of nodes"
                                                 (eq isdir (file-directory-p x))))
                              list1)))
         ;; if it is not in the first directory, add it as a node
-        (when (not file1)
+        (unless file1
           ;; if it is a directory, set the whole subtree to children
           (when (file-directory-p file2)
             (setq children (subtree node file2 'right)))
@@ -314,9 +314,9 @@ the rest is the combined list of nodes"
 
 (defun create-root-node (dir1 dir2 &key (message-function nil)
                                      (activity-function nil))
-  (when (not (file-directory-p dir1))
+  (unless (file-directory-p dir1)
     (error (format nil "Path ~a is not a directory" dir1)))
-  (when (not (file-directory-p dir2))
+  (unless (file-directory-p dir2)
     (error (format nil "Path ~a is not a directory" dir2)))
   (setf *message-fun* message-function)
   (setf *activity-fun* activity-function)

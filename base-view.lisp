@@ -125,15 +125,22 @@ in classes which use not default client rect"))
                                        (line (point-line (point v)))
                                        (col (point-column (point v))))
   (let ((client-l (rect-y (client-rect v)))
-        (client-c (rect-x (client-rect v))))
+        (client-c (rect-x (client-rect v)))
+        (client-w (rect-width (client-rect v)))
+        (client-h (rect-height (client-rect v))))
     (with-window (v w)
-      (let* ((l (+ client-l line))              ; adjust to client coordinates
-             (c (+ client-c col))              ; adjust to client coordinates
-             (endpos (+ c (length string))))
-        (goto-point v :line line :col col )
-        (with-color-win (w with-color)
-          (mvwprintw w l c string))
-        (goto-point v :col endpos)
+      (let* ((l (+ client-l line))              ; from client to screen
+             (c (+ client-c col))               ; from client to screen
+             (len (length string))
+             (endpos (+ c len)))
+        ;(goto-point v :line line :col col )
+        (when (and (>= l client-l)
+                   (<  l (+ client-l client-h))
+                   (>= endpos client-c)
+                   (< c (+ client-c client-w)))
+          (with-color-win (w with-color)
+            (mvwprintw w l c string)))
+        (goto-point v :line line :col endpos)
         endpos))))
 
 (defgeneric vertical-line (v x y length &key with-color)
@@ -143,14 +150,30 @@ in classes which use not default client rect"))
 (defmethod vertical-line ((v view) x y length &key (with-color :white))
   (with-window (v w)
     (with-color-win (w with-color)
-      (let ((client-x (+ x (rect-x (client-rect v))))
-            (client-y (+ y (rect-y (client-rect v)))))
-        (mvwvline w
-                  client-y    ; y start position
-                  client-x    ; x position
-                  ACS_VLINE   ; character
-                  length))))) ; number of rows to draw
-
+      (when (> length 0)                ; only positive direction
+      (let* ((client-left (rect-x (client-rect v)))
+             (client-top (rect-y (client-rect v)))
+             (client-width (rect-width (client-rect v)))
+             (client-height (rect-height (client-rect v)))
+             (client-bottom (+ client-top client-height))
+             (screen-x (+ x client-left)) ; client to screen
+             (screen-y (+ y client-top))  ; client to screen
+             (screen-y-end-pos (+ screen-y length)))
+        ;; guard against being left/right of the client rect or below
+        (when (and (>= x 0)
+                   (<  x client-width)
+                   (< y client-height))
+          ;; cut on top
+          (when (< screen-y client-top)
+            (setf screen-y client-top))
+          (when (> screen-y-end-pos client-bottom)
+            (setf screen-y-end-pos client-bottom))
+          (mvwvline w
+                    screen-y    ; y start position
+                    screen-x    ; x position
+                    ACS_VLINE   ; character
+                    (- screen-y-end-pos screen-y)))))))) ; number of rows to draw
+        
 (defgeneric horizontal-line (v x y length &key with-color)
   (:documentation "Draws the horizontal line in current window starting from position
 [X,Y] drawing LENGTH columns"))
@@ -245,11 +268,19 @@ in classes which use not default client rect"))
 (defgeneric lower-left-corner (v x y &key with-color)
   (:documentation "Draw the sign of the lower-left corner of the box"))
 (defmethod lower-left-corner ((v view) x y &key (with-color :white))
-  (let ((client-x (+ x (rect-x (client-rect v))))
-        (client-y (+ y (rect-y (client-rect v)))))
-    (with-window (v w)
-      (with-color-win (w with-color)
-        (mvwaddch w client-y client-x ACS_LLCORNER)))))
+  (let* ((client-left (rect-x (client-rect v)))
+         (client-top (rect-y (client-rect v)))
+         (w (rect-width (client-rect v)))
+         (h (rect-height (client-rect v)))
+         (screen-x (+ x client-left)) ; client to screen
+         (screen-y (+ y client-top))) ; client to screen
+    (when (and (>= screen-x client-left)
+               (>= screen-y client-top)
+               (< screen-x (+ client-left w))
+               (< screen-y (+ client-top h)))
+      (with-window (v w)
+        (with-color-win (w with-color)
+          (mvwaddch w screen-y screen-x ACS_LLCORNER))))))
 
 
 ;;; base-view.lisp ends here
