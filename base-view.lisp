@@ -166,6 +166,7 @@ in classes which use not default client rect"))
           ;; cut on top
           (when (< screen-y client-top)
             (setf screen-y client-top))
+          ;; cut on bottom
           (when (> screen-y-end-pos client-bottom)
             (setf screen-y-end-pos client-bottom))
           (mvwvline w
@@ -181,13 +182,29 @@ in classes which use not default client rect"))
 (defmethod horizontal-line ((v view) x y length &key (with-color :white))
   (with-window (v w)
     (with-color-win (w with-color)
-      (let ((client-x (+ x (rect-x (client-rect v))))
-            (client-y (+ y (rect-y (client-rect v)))))
-        (mvwhline w
-                  client-y    ; y start position
-                  client-x    ; x position
-                  ACS_HLINE   ; character
-                  length))))) ; number of columns to draw
+      (let* ((client-left (rect-x (client-rect v)))
+             (client-top (rect-y (client-rect v)))
+             (client-width (rect-width (client-rect v)))
+             (client-height (rect-height (client-rect v)))
+             (client-right (+ client-left client-width))
+             (screen-x (+ x client-left)) ; client to screen
+             (screen-y (+ y client-top))  ; client to screen
+             (screen-x-end-pos (+ screen-x length)))
+        ;; guard against being below/above of the client rect or to the right
+        (when (and (>= y 0)
+                   (<  y client-height)
+                   (< x client-width))
+          ;; cut on left side
+          (when (< screen-x client-left)
+            (setf screen-x client-left))
+          ;; cut on right side
+          (when (> screen-x-end-pos client-right)
+            (setf screen-x-end-pos client-right))
+          (mvwhline w
+                    screen-y    ; y start position
+                    screen-x    ; x position
+                    ACS_HLINE   ; character
+                    (- screen-x-end-pos screen-x))))))) ; number of columns to draw
 
 
 
