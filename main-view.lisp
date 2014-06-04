@@ -99,21 +99,11 @@ generates the function
   (apply #'format *ERROR-OUTPUT* args)
   (format *ERROR-OUTPUT* "~%"))
 
-#|
-(defmethod destroy :before ((v view))
-  "Clears and destroys the ncurses window"
-  (with-window (v w)
-    ;; border with spaces
-    (wborder w 32 32 32 32 32 32 32 32)))
-|#
-
 (defmethod refresh ((v main-view) &key (force t))
-  ;; if we have a ncurses window
-  (with-window (v w)
-                                        ;(format *ERROR-OUTPUT* "Refresh called: ~a :force ~a ~%" (class-name (class-of v)) force)
-    (box w 0 0)
-    (when (node v)
-      (refresh-contents v force))))
+  (when (node v)
+    (refresh-contents v force))
+  ;; give the parent class the opportunity to draw its contents
+  (call-next-method))
 
 
 (defgeneric window-line-to-tree-line (v            window-line))
@@ -448,7 +438,6 @@ and redraws all data inside"
                         (if (eq side 'zdircmp.model.node::right)
                             (+ +left-offset+ middle)
                             0))) 
-         (height (rect-height (client-rect v)))
          (window-line (tree-line-to-window-line v line))
          (parent-window-line (tree-line-to-window-line v parent-line))
          ;; x-position is a text position, so in order to draw the line and
@@ -479,8 +468,7 @@ and redraws all data inside"
       ;; but don't forget we draw the line not from the parent
       ;; line, but from the line below the parent
       (let* ((start-y-position (1+ parent-window-line))
-             (len (- window-line start-y-position))
-             (end-line (+ start-y-position len)))
+             (len (- window-line start-y-position)))
         (vertical-line v
                        (1- line-start)   ; x start position
                        start-y-position  ; y position

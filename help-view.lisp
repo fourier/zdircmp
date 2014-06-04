@@ -23,7 +23,11 @@
 
 ;;; Code:
 (defpackage :zdircmp.view.help
-  (:use ::common-lisp :cl-ncurses :zdircmp.util :zdircmp.ui.utils :zdircmp.view.base)
+  (:use ::common-lisp
+        :cl-ncurses
+        :zdircmp.util
+        :zdircmp.ui.utils
+        :zdircmp.view.base)
   ;; shadowing refresh from cl-ncurses, we use the one in base-view
   (:shadowing-import-from :zdircmp.view.base :refresh)
   (:export :make-help-view))
@@ -80,6 +84,7 @@
   (text-out v " - files/dirs are different")
   (goto-point v :line 8 :col 0)
   (text-out v "\"file name\"" :with-color :cyan)
-  (text-out v " - files(or contents of dir) exist only on one pane"))
+  (text-out v " - files(or contents of dir) exist only on one pane")
+  (call-next-method))
 
 ;;; head-view.lisp ends here

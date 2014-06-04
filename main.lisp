@@ -152,8 +152,8 @@
    nil))
 
 (defun usage (appname)
-  (format *error-output* (concat  "Usage: " appname " path1 path2~%"))
-  (format *error-output* "where path1 and path2 - paths to directories to compare~%")
+  (format *standard-output* (concat  "Usage: " appname " path1 path2~%"))
+  (format *standard-output* "where path1 and path2 - paths to directories to compare~%")
   #+SBCL (sb-ext:exit)
   #+LISPWORKS (lispworks:quit)
   )
@@ -166,7 +166,7 @@
         (usage (car cmdargs))
         (let ((left-path (second cmdargs))
               (right-path (third cmdargs)))
-          ;(swank:create-server :port 4006)
+          ;;(swank:create-server :port 4006)
           (with-ncurses
               ;; no caching of the input
               (cbreak)
@@ -229,9 +229,12 @@
                 (on-bad-screen-size (what) (format *error-output* (description what)))
                 (on-exit-command (command) (message *message-view* "Exiting..."))))
             ;; destroy windows
-            (destroy *help-view*)
-            (destroy *message-view*)
-            (destroy *main-view*))))))
+            (when *help-view*
+              (destroy *help-view*))
+            (when *message-view*
+              (destroy *message-view*))
+            (when *main-view*
+              (destroy *main-view*)))))))
 
 
 ;;; main.lisp ends here

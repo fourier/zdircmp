@@ -24,8 +24,7 @@
 ;;; Code:
 (defpackage :zdircmp.view.bordered
   (:use ::common-lisp :cl-ncurses :zdircmp.ui.utils :zdircmp.view.base)
-  ;; shadowing refresh from cl-ncurses, we don't use it anyway
-  (:shadow :refresh)
+  (:shadowing-import-from :zdircmp.view.base :refresh)
   (:export :bordered-view))
 
 (in-package :zdircmp.view.bordered)
@@ -34,15 +33,10 @@
   ()
   (:documentation "Base class for ncurses-based views with borders"))
 
-;; (defmethod destroy :before ((v view))
-;;   (with-window (v w)
-;;     ;; border with spaces
-;;     (wborder w 32 32 32 32 32 32 32 32)))
-
-;; (defmethod refresh :before ((v main-view) &key (force t))
-;;   ;; if we have a ncurses window
-;;   (with-window (v w)
-;;     (box w 0 0)))
+(defmethod refresh ((v bordered-view) &key force)
+  (declare (ignore force))
+  (with-window (v w)
+    (box w 0 0)))
 
 (defmethod initialize-instance :after ((v bordered-view) &rest args)
   ;; ignore unused args warning
@@ -50,12 +44,12 @@
   (update-client-rect v))
 
 (defmethod update-client-rect ((v bordered-view))
-  (format *error-output* "bordered-view::update-client-rect ~%")
   (with-slots (window-rect client-rect) v
     (setf client-rect (make-rect :x 1
                                  :y 1
                                  :width (- (rect-width window-rect) 2)
                                  :height (- (rect-height window-rect) 2)))))
-                                 
 
+
+                                 
 ;;; bordered-view.lisp ends here

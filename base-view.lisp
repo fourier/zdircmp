@@ -36,6 +36,7 @@
            :refresh
            :destroy
            :resize
+           :update-client-rect
            :visible
            :show
            :process-key
@@ -106,7 +107,6 @@ in classes which use not default client rect"))
     (wrefresh (window v))))
 
 (defmethod update-client-rect ((v view))
-  (format *error-output* "view::update-client-rect ~%")
   (with-slots (window-rect client-rect) v
     (setf client-rect (make-rect :width (rect-width window-rect)
                                  :height (rect-height window-rect)))))
@@ -231,6 +231,11 @@ in classes which use not default client rect"))
   (with-window (v w)
     (wclear w)))
 
+
+(defmethod refresh ((v view) &key (force t))
+;; do nothing in base class
+  (declare (ignore force)))
+
 (defmethod refresh :after ((v view) &key (force t))
   (declare (ignore force))
   (with-window (v w)
@@ -254,6 +259,7 @@ in classes which use not default client rect"))
       (wresize w height width)
       (mvwin w y x)
       (refresh v :force t))))
+
 
 (defgeneric visible (v)
   (:documentation "Determines if the window is visible"))
