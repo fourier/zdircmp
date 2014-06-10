@@ -101,9 +101,7 @@ generates the function
 
 (defmethod refresh ((v main-view) &key (force t))
   (when (node v)
-    (refresh-contents v force))
-  ;; give the parent class the opportunity to draw its contents
-  (call-next-method))
+    (refresh-contents v force)))
 
 
 (defgeneric window-line-to-tree-line (v            window-line))

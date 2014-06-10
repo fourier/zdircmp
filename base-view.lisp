@@ -226,21 +226,12 @@ in classes which use not default client rect"))
 (defgeneric refresh (v &key force)
   (:documentation "Refreshes the associated ncurses window"))
 
-(defmethod refresh :before ((v view) &key (force t))
+(defmethod refresh :around ((v view) &key (force t))
   (declare (ignore force))
   (with-window (v w)
-    (wclear w)))
-
-
-(defmethod refresh ((v view) &key (force t))
-;; do nothing in base class
-  (declare (ignore force)))
-
-(defmethod refresh :after ((v view) &key (force t))
-  (declare (ignore force))
-  (with-window (v w)
+    (wclear w)
+    (call-next-method)
     (wrefresh w)))
-
 
 (defgeneric resize (v x y width height)
   (:documentation "Process the resize command, resizing the associated ncurses window"))

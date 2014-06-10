@@ -84,7 +84,7 @@
   (text-out v " - files/dirs are different")
   (goto-point v :line 8 :col 0)
   (text-out v "\"file name\"" :with-color :cyan)
-  (text-out v " - files(or contents of dir) exist only on one pane")
-  (call-next-method))
+  (text-out v " - files(or contents of dir) exist only on one pane"))
+
 
 ;;; head-view.lisp ends here

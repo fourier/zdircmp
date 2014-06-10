@@ -33,7 +33,7 @@
   ()
   (:documentation "Base class for ncurses-based views with borders"))
 
-(defmethod refresh ((v bordered-view) &key force)
+(defmethod refresh :before ((v bordered-view) &key force)
   (declare (ignore force))
   (with-window (v w)
     (box w 0 0)))
