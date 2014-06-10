@@ -90,7 +90,7 @@
     (resize *status-view* 0 (- maxrows 2) maxcols 1)
     (let ((main-view-height (- maxrows 2))
           (main-view-y 0))
-      (when (visible *help-view*)
+      (when (and *help-view* (visible *help-view*))
         (resize *help-view* 0 0 maxcols +help-window-height+)
         (setf main-view-height (- main-view-height +help-window-height+)
               main-view-y (+ main-view-y +help-window-height+)))
@@ -166,7 +166,7 @@
         (usage (car cmdargs))
         (let ((left-path (second cmdargs))
               (right-path (third cmdargs)))
-          ;;(swank:create-server :port 4006)
+          ;; (swank:create-server :port 4006)
           (with-ncurses
               ;; no caching of the input
               (cbreak)
