@@ -13,6 +13,8 @@
                         :depends-on ("export-util"))
                  (:file "base-view"
                         :depends-on ("utils-ui"))
+                 (:file "wm-ui"
+                        :depends-on ("utils-ui" "base-view" "constants"))
                  (:file "bordered-view"
                         :depends-on ("utils-ui" "base-view"))
                  (:file "message-view" :depends-on ("utils-ui" "base-view"))
@@ -39,5 +41,5 @@
                                      "status-view"
                                      "help-view"
                                      "main-view"
-                                     "utils-ui"
+                                     "wm-ui"
                                      "model-node"))))
