@@ -54,7 +54,8 @@
 (defmacro with-window-manager (min-width min-height &body body)
   "Macro to create a ncurses environment with window manager"
   (let ((maxcols-name (gensym))
-        (maxrows-name (gensym)))
+        (maxrows-name (gensym))
+        (win-name (gensym)))
   `(unwind-protect
         (progn
           (setf *global-window-manager* (make-instance 'window-manager
@@ -91,14 +92,9 @@
                   ,@body
                   (main-loop *global-window-manager*))
               (on-bad-screen-size (what) (format *error-output* (description what)))
-              (on-exit-command (command) (message *message-view* "Exiting...")))))
-     ;; destroy windows
-     ;; (when *help-view*
-     ;;   (destroy *help-view*))
-     ;; (when *message-view*
-     ;;   (destroy *message-view*))
-     ;; (when *main-view*
-     ;;   (destroy *main-view*))))
+              (on-exit-command (command) (message *message-view* "Exiting..."))))
+          (dolist (,win-name (windows *global-window-manager*))
+            (destroy ,win-name)))
      (progn
        (endwin)))))
 
