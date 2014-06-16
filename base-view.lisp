@@ -23,23 +23,13 @@
 
 ;;; Code:
 (defpackage :zdircmp.view.base
-  (:use ::common-lisp :cl-ncurses :zdircmp.ui.utils)
-  ;; shadowing refresh from cl-ncurses, we don't use it anyway
-  (:shadow :refresh)
+  (:use ::common-lisp :zdircmp.ui.utils :zdircmp.view.mixin)
   (:export :view
-           :window
-           :window-rect
            :client-rect
            :width
            :height
            :with-window
-           :refresh
-           :destroy
-           :resize
            :update-client-rect
-           :visible
-           :show
-           :process-key
            :goto-point
            :text-out
            :vertical-line
@@ -47,6 +37,9 @@
            :lower-left-corner))
 
 (in-package :zdircmp.view.base)
+
+(do-external-symbols (symb (find-package :zdircmp.view.mixin))
+  (export symb))
 
 (defmacro with-window ((v w) &body body)
   "When-let pattern. Set the W to the ncurses window and executes the body"
@@ -60,7 +53,7 @@ Both 0-based"
   (line 0)
   (column 0))
 
-(defclass view ()
+(defclass view (mixin)
   ((window :initform nil :reader window
            :documentation "NCurses window")
    (window-rect :initarg :window-rect :reader window-rect
@@ -101,10 +94,11 @@ in classes which use not default client rect"))
   ;; ignore unused args warning
   (declare (ignore args))
   (with-slots (window window-rect) v
-    (setf window (newwin (height v) (width v) (y v) (x v)))
+    (setf window (cl-ncurses:newwin (height v) (width v) (y v) (x v)))
     (update-client-rect v)
     (refresh v)
-    (wrefresh (window v))))
+    (cl-ncurses:wrefresh (window v))
+    (zdircmp.ui.wm:push-window (zdircmp.ui.wm:get-window-manager) v)))
 
 (defmethod update-client-rect ((v view))
   (with-slots (window-rect client-rect) v
@@ -139,7 +133,7 @@ in classes which use not default client rect"))
                    (>= endpos client-c)
                    (< c (+ client-c client-w)))
           (with-color-win (w with-color)
-            (mvwprintw w l c string)))
+            (cl-ncurses:mvwprintw w l c string)))
         (goto-point v :line line :col endpos)
         endpos))))
 
@@ -169,12 +163,12 @@ in classes which use not default client rect"))
           ;; cut on bottom
           (when (> screen-y-end-pos client-bottom)
             (setf screen-y-end-pos client-bottom))
-          (mvwvline w
-                    screen-y    ; y start position
-                    screen-x    ; x position
-                    ACS_VLINE   ; character
-                    (- screen-y-end-pos screen-y)))))))) ; number of rows to draw
-        
+          (cl-ncurses:mvwvline w
+                               screen-y    ; y start position
+                               screen-x    ; x position
+                               ACS_VLINE   ; character
+                               (- screen-y-end-pos screen-y)))))))) ; number of rows to draw
+
 (defgeneric horizontal-line (v x y length &key with-color)
   (:documentation "Draws the horizontal line in current window starting from position
 [X,Y] drawing LENGTH columns"))
@@ -200,11 +194,11 @@ in classes which use not default client rect"))
           ;; cut on right side
           (when (> screen-x-end-pos client-right)
             (setf screen-x-end-pos client-right))
-          (mvwhline w
-                    screen-y    ; y start position
-                    screen-x    ; x position
-                    ACS_HLINE   ; character
-                    (- screen-x-end-pos screen-x))))))) ; number of columns to draw
+          (cl-ncurses:mvwhline w
+                               screen-y    ; y start position
+                               screen-x    ; x position
+                               ACS_HLINE   ; character
+                               (- screen-x-end-pos screen-x))))))) ; number of columns to draw
 
 
 
@@ -214,27 +208,18 @@ in classes which use not default client rect"))
   (cons (point-line (point v))
         (point-column (point v))))
 
-(defgeneric destroy (v)
-  (:documentation "Destroy the associated with view ncurses window"))
-
 (defmethod destroy ((v view))
   (with-window (v w)
     (with-slots (window) v
-      (delwin w)
+      (cl-ncurses:delwin w)
       (setf window nil))))
-
-(defgeneric refresh (v &key force)
-  (:documentation "Refreshes the associated ncurses window"))
 
 (defmethod refresh :around ((v view) &key (force t))
   (declare (ignore force))
   (with-window (v w)
-    (wclear w)
+    (cl-ncurses:wclear w)
     (call-next-method)
-    (wrefresh w)))
-
-(defgeneric resize (v x y width height)
-  (:documentation "Process the resize command, resizing the associated ncurses window"))
+    (cl-ncurses:wrefresh w)))
 
 (defmethod resize ((v view) x y width height)
   (with-window (v w)
@@ -246,37 +231,28 @@ in classes which use not default client rect"))
              :width width
              :height height))
       (update-client-rect v)
-      (wclear w)
-      (wresize w height width)
-      (mvwin w y x)
+      (cl-ncurses:wclear w)
+      (cl-ncurses:wresize w height width)
+      (cl-ncurses:mvwin w y x)
       (refresh v :force t))))
 
-
-(defgeneric visible (v)
-  (:documentation "Determines if the window is visible"))
 
 (defmethod visible ((v view))
   (window v))
 
-(defgeneric show (v show)
-  (:documentation "Show or hides window depending on SHOW argument"))
-
 (defmethod show ((v view) show)
   (with-slots (window) v
     (with-window (v w)
-      (wclear w)
-      (wrefresh w)
-      (delwin w))
+      (cl-ncurses:wclear w)
+      (cl-ncurses:wrefresh w)
+      (cl-ncurses:delwin w))
     (setf window 
-          (if show (newwin (height v)
-                           (width v)
-                           (y v)
-                           (x v))
+          (if show (cl-ncurses:newwin (height v)
+                                      (width v)
+                                      (y v)
+                                      (x v))
               nil))
     (refresh v)))
-
-(defgeneric process-key (v key)
-  (:documentation "Key handler for view"))
 
 
 (defgeneric lower-left-corner (v x y &key with-color)
@@ -294,7 +270,7 @@ in classes which use not default client rect"))
                (< screen-y (+ client-top h)))
       (with-window (v w)
         (with-color-win (w with-color)
-          (mvwaddch w screen-y screen-x ACS_LLCORNER))))))
+          (cl-ncurses:mvwaddch w screen-y screen-x ACS_LLCORNER))))))
 
 
 ;;; base-view.lisp ends here

@@ -393,15 +393,17 @@ and redraws all data inside"
 
 
 (defun color-for-diff (diff)
-  (cond ((eq diff 'zdircmp.model.node::diff) :red)
-        ((eq diff 'zdircmp.model.node::new)  :cyan)
-        (t :white)))
+  (case diff
+    ('zdircmp.model.node::diff :red)
+    ('zdircmp.model.node::new  :cyan)
+    (t :white)))
 
 (defun inverse-color (color)
-  (cond ((eq color :red) :red-on-white)
-        ((eq color :blue) :blue-on-white)
-        ((eq color :green) :green-on-white)
-        (t :black-on-white)))
+  (case color
+    (:red :red-on-white)
+    (:blue :blue-on-white)
+    (:green :green-on-white)
+    (t :black-on-white)))
 
 (defgeneric insert-single-entry (v
                                  short-name

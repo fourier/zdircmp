@@ -26,17 +26,25 @@
         :cl-ncurses
         :zdircmp.constants
         :zdircmp.ui.utils
-        :zdircmp.view.base)
-  (:shadowing-import-from :zdircmp.view.base :refresh)
+        :zdircmp.view.mixin)
+  (:shadowing-import-from :zdircmp.view.mixin :refresh)
   (:export :with-window-manager
            :get-window-manager
            :screen-width
            :screen-height
+           :push-window
            ))
 
 (in-package :zdircmp.ui.wm)
 
 (defvar *global-window-manager* nil)
+
+(define-condition on-bad-screen-size (error)
+  ((message :initarg :description :reader description)))
+
+(define-condition on-exit-command (error)
+  ((text :initarg :text :reader text)))
+
 
 (defclass window-manager ()
   ((windows :initform ()
@@ -98,12 +106,6 @@
      (progn
        (endwin)))))
 
-(define-condition on-bad-screen-size (error)
-  ((message :initarg :description :reader description)))
-
-(define-condition on-exit-command (error)
-  ((text :initarg :text :reader text)))
-
 
 (defun get-window-manager ()
   *global-window-manager*)
@@ -139,32 +141,51 @@
                     width height (min-width wm) (min-height wm)))))
 
 
-(defun process-resize ()
-  (let ((maxcols 0)
-        (maxrows 0))
-    (getmaxyx *stdscr* maxrows maxcols)
-    (assert-screen-sizes-ok maxcols maxrows)
-    (wclear *stdscr*)
-    (wrefresh *stdscr*)
-    (resize *message-view* 0 (1- maxrows) maxcols 1)
-    (resize *status-view* 0 (- maxrows 2) maxcols 1)
-    (let ((main-view-height (- maxrows 2))
-          (main-view-y 0))
-      (when (and *help-view* (visible *help-view*))
-        (resize *help-view* 0 0 maxcols +help-window-height+)
-        (setf main-view-height (- main-view-height +help-window-height+)
-              main-view-y (+ main-view-y +help-window-height+)))
-      ;; resize the main window
-      (resize *main-view* 0 main-view-y maxcols main-view-height))))
+;; (defun process-resize ()
+;;   (let ((maxcols 0)
+;;         (maxrows 0))
+;;     (getmaxyx *stdscr* maxrows maxcols)
+;;     (assert-screen-sizes-ok maxcols maxrows)
+;;     (wclear *stdscr*)
+;;     (wrefresh *stdscr*)
+;;     (resize *message-view* 0 (1- maxrows) maxcols 1)
+;;     (resize *status-view* 0 (- maxrows 2) maxcols 1)
+;;     (let ((main-view-height (- maxrows 2))
+;;           (main-view-y 0))
+;;       (when (and *help-view* (visible *help-view*))
+;;         (resize *help-view* 0 0 maxcols +help-window-height+)
+;;         (setf main-view-height (- main-view-height +help-window-height+)
+;;               main-view-y (+ main-view-y +help-window-height+)))
+;;       ;; resize the main window
+;;       (resize *main-view* 0 main-view-y maxcols main-view-height))))
+
+(defgeneric process-resize (wm)
+  (:documentation "Process resize event - resize all stretched windows in window stack"))
+
+(defmethod process-resize ((wm window-manager))
+  )
 
 
-(defun handle-key (key)
-  ;; handle F1-F12 in main app
+(defgeneric handle-key (wm key)
+  (:documentation "Generic key handler"))
+
+(defmethod handle-key ((wm window-manager) key)
+  (format *error-output* "Views: ~a~%" (windows wm))
+  (case key
+    ;; handle resize
+    (-1 (process-resize wm))
+    ;; process key by topmost window
+    (t (unless (null (windows wm))
+         (format *error-output* "Topmost view: ~a~%" (car (windows wm)))
+         (process-key (car (windows wm)) key)))))
+
+  
+          #|
   (cond ((eq key +KEY-ESC+)
          (signal 'on-exit-command :text "exit"))
         ((eq key +KEY-F1+)
          (toggle-help-view))
-        #|
+
         ((eq key +KEY-F2+) 
          (message *message-view* "F2"))
         ((eq key +KEY-F3+) 
@@ -187,13 +208,13 @@
          (message *message-view* "F11"))
         ((eq key +KEY-F12+) 
          (message *message-view* "F12"))
-        |#
+
         ;; handle resize event
         ((eq key -1)
          (process-resize))
         ;; process others in main view
         (t (process-key *main-view* key))))
-
+        |#
 
 
 (defgeneric main-loop (wm)
@@ -202,8 +223,15 @@
 (defmethod main-loop ((wm window-manager))
   (let ((key nil))
     (loop while (setf key (getch)) do
-         (handle-key key))))
+         (handle-key wm key))))
 
+
+(defgeneric push-window (wm v)
+  (:documentation "Push the view V into the window stack"))
+
+(defmethod push-window ((wm window-manager) v)
+  (format *error-output* "Push called~%")
+  (push v (windows wm)))
 
 
 ;;; wm-ui.lisp ends here

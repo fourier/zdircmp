@@ -7,14 +7,15 @@
     :components ((:file "util")
                  (:file "export-util")
                  (:file "command-ui")
+                 (:file "mixin-view")
                  (:file "constants"
                         :depends-on ("export-util"))
                  (:file "utils-ui"
                         :depends-on ("export-util"))
                  (:file "base-view"
-                        :depends-on ("utils-ui"))
+                        :depends-on ("utils-ui" "mixin-view" "wm-ui"))
                  (:file "wm-ui"
-                        :depends-on ("utils-ui" "base-view" "constants"))
+                        :depends-on ("utils-ui" "mixin-view" "constants"))
                  (:file "bordered-view"
                         :depends-on ("utils-ui" "base-view"))
                  (:file "message-view" :depends-on ("utils-ui" "base-view"))
