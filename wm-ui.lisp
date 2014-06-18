@@ -139,25 +139,6 @@
                     "Too small window size: ~ax~a, required size ~ax~a"
                     width height (min-width wm) (min-height wm)))))
 
-
-;; (defun process-resize ()
-;;   (let ((maxcols 0)
-;;         (maxrows 0))
-;;     (getmaxyx *stdscr* maxrows maxcols)
-;;     (assert-screen-sizes-ok maxcols maxrows)
-;;     (wclear *stdscr*)
-;;     (wrefresh *stdscr*)
-;;     (resize *message-view* 0 (1- maxrows) maxcols 1)
-;;     (resize *status-view* 0 (- maxrows 2) maxcols 1)
-;;     (let ((main-view-height (- maxrows 2))
-;;           (main-view-y 0))
-;;       (when (and *help-view* (visible *help-view*))
-;;         (resize *help-view* 0 0 maxcols +help-window-height+)
-;;         (setf main-view-height (- main-view-height +help-window-height+)
-;;               main-view-y (+ main-view-y +help-window-height+)))
-;;       ;; resize the main window
-;;       (resize *main-view* 0 main-view-y maxcols main-view-height))))
-
 (defgeneric process-resize (wm)
   (:documentation "Process resize event - resize all stretched windows in window stack"))
 
@@ -220,50 +201,20 @@ gives us width 50"
 
 (defmethod handle-key ((wm window-manager) key)
   (format *error-output* "handle-key: ~a~%" key)
-  (case key
+  (alexandria:switch (key)
     ;; handle resize
     (-1 (process-resize wm))
     ;; process key by topmost window
     (t (unless (null (windows wm))
          (format *error-output* "Topmost view: ~a~%" (car (windows wm)))
          (process-key (car (windows wm)) key)))))
-
   
-          #|
-  (cond ((eq key +KEY-ESC+)
-         (signal 'on-exit-command :text "exit"))
-        ((eq key +KEY-F1+)
-         (toggle-help-view))
-
-        ((eq key +KEY-F2+) 
-         (message *message-view* "F2"))
-        ((eq key +KEY-F3+) 
-         (message *message-view* "F3"))
-        ((eq key +KEY-F4+) 
-         (message *message-view* "F4"))
-        ((eq key +KEY-F5+) 
-         (message *message-view* "F5"))
-        ((eq key +KEY-F6+) 
-         (message *message-view* "F6"))
-        ((eq key +KEY-F7+) 
-         (message *message-view* "F7"))
-        ((eq key +KEY-F8+) 
-         (message *message-view* "F8"))
-        ((eq key +KEY-F9+) 
-         (message *message-view* "F9"))
-        ((eq key +KEY-F10+) 
-         (message *message-view* "F10"))
-        ((eq key +KEY-F11+) 
-         (message *message-view* "F11"))
-        ((eq key +KEY-F12+) 
-         (message *message-view* "F12"))
-
-        ;; handle resize event
-        ((eq key -1)
-         (process-resize))
-        ;; process others in main view
-        (t (process-key *main-view* key))))
-        |#
+#|
+(cond ((eq key +KEY-ESC+)
+       (signal 'on-exit-command :text "exit"))
+      ((eq key +KEY-F1+)
+       (toggle-help-view))
+|#
 
 
 (defgeneric main-loop (wm)
