@@ -269,7 +269,9 @@ the screen
 
 (defmethod process-key ((v main-view) key)
   "Keypress dispatcher"
-  (cond ((eq key +KEY-UP+)
+  (cond ((eq key +KEY-ESC+)
+         (quit-application (get-window-manager)))
+        ((eq key +KEY-UP+)
          (process-up v))
         ((eq key +KEY-DOWN+)
          (process-down v))

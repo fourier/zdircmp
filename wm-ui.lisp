@@ -33,6 +33,7 @@
            :screen-width
            :screen-height
            :push-window
+           :quit-application
            ))
 
 (in-package :zdircmp.ui.wm)
@@ -57,7 +58,14 @@
    (min-height :initarg :min-height
                :initform 24
                :reader min-height
-               :documentation "Minimum window height. On resize less than this size will exit the app")))
+               :documentation "Minimum window height. On resize less than this size will exit the app")
+   (screen-width :initform 0
+                 :reader screen-width
+                 :documentation "Current screen width. Updated in process-resize")
+   (screen-height :initform 0
+                  :reader screen-height
+                  :documentation "Current screen height. Updated in process-resize")))
+   
 
 (defmacro with-window-manager (min-width min-height &body body)
   "Macro to create a ncurses environment with window manager"
@@ -97,6 +105,7 @@
                   (ensure-screen-sizes-ok *global-window-manager*
                                           ,maxcols-name
                                           ,maxrows-name)
+                  (update-screen-size *global-window-manager* ,maxcols-name ,maxrows-name)
                   ,@body
                   (main-loop *global-window-manager*))
               (on-bad-screen-size (what) (format *error-output* (description what)))
@@ -110,24 +119,14 @@
 (defun get-window-manager ()
   *global-window-manager*)
 
-(defgeneric screen-width (wm)
-  (:documentation "Returns the number of columns of the screen"))
+(defgeneric update-screen-size (wm width height)
+  (:documentation "Update current screen size to one specified"))
 
-(defmethod screen-width ((wm window-manager))
-  (let ((maxcols 0)
-        (maxrows 0))
-    (getmaxyx *stdscr* maxrows maxcols)
-    maxcols))
-  
-(defgeneric screen-height (wm)
-  (:documentation "Returns the number of rows of the screen"))
-
-(defmethod screen-height ((wm window-manager))
-  (let ((maxcols 0)
-        (maxrows 0))
-    (getmaxyx *stdscr* maxrows maxcols)
-    maxrows))
-
+(defmethod update-screen-size ((wm window-manager) width height)
+  (with-slots (screen-width screen-height) wm
+    (setf screen-width width
+          screen-height height)))
+    
 
 (defgeneric ensure-screen-sizes-ok (wm width height)
   (:documentation "Verifies if the screen size is up to the one specified in WM"))
@@ -162,15 +161,65 @@
 (defgeneric process-resize (wm)
   (:documentation "Process resize event - resize all stretched windows in window stack"))
 
+(defun calculate-new-size (pos size old-screen-size new-screen-size)
+  "Calculate the new width/height aligning by left/bottom sides of the screen.
+POS - either x or y
+SIZE - either window width or height
+OLD-SCREEN-SIZE - old screen either width or height
+NEW-SCREEN-SIZE - new screen either width or height.
+Calculation example:
+width = 60;
+x = 10;
+oldScreenWidth = 70;
+newScreenWidth = 60;
+diff = newScreenWidth - (x + width)
+newWidth = if x + width == oldScreenWidth
+           then newScreenWidth - x
+           else 
+             if diff < 0
+             then width + diff
+             else width
+gives us width 50"
+  (let ((diff (- new-screen-size (+ pos size))))
+    (cond ((= (+ pos size) old-screen-size)
+           (- new-screen-size pos))
+          ((< diff 0)
+           (+ size diff))
+          (t size))))
+              
+                           
+
 (defmethod process-resize ((wm window-manager))
-  )
+  (let ((new-screen-width 0)
+        (new-screen-height 0))
+    (getmaxyx *stdscr* new-screen-height new-screen-width)
+    (ensure-screen-sizes-ok wm new-screen-width new-screen-height)
+    (wclear *stdscr*)
+    (wrefresh *stdscr*)
+    (dolist (w (windows wm))
+      (let* ((r (window-rect w))
+             (new-width (calculate-new-size (rect-x r)
+                                            (rect-width r)
+                                            (screen-width wm)
+                                            new-screen-width))
+             (new-height (calculate-new-size (rect-y r)
+                                             (rect-height r)
+                                             (screen-height wm)
+                                             new-screen-height)))
+        ;; only resize visible views
+        (when (visible w)
+          (if (and (> new-width 0)
+                   (> new-height 0))
+              (resize w (rect-x r) (rect-y r) new-width new-height)
+              (show w nil)))))
+    (update-screen-size wm new-screen-width new-screen-height)))
 
 
 (defgeneric handle-key (wm key)
   (:documentation "Generic key handler"))
 
 (defmethod handle-key ((wm window-manager) key)
-  (format *error-output* "Views: ~a~%" (windows wm))
+  (format *error-output* "handle-key: ~a~%" key)
   (case key
     ;; handle resize
     (-1 (process-resize wm))
@@ -230,8 +279,13 @@
   (:documentation "Push the view V into the window stack"))
 
 (defmethod push-window ((wm window-manager) v)
-  (format *error-output* "Push called~%")
   (push v (windows wm)))
+
+(defgeneric quit-application (wm)
+  (:documentation "Force to shut down the application"))
+
+(defmethod quit-application ((wm window-manager))
+  (signal 'on-exit-command :text "exit"))
 
 
 ;;; wm-ui.lisp ends here
