@@ -99,8 +99,8 @@
               (right-path (third cmdargs)))
           (swank:create-server :port 4006)
           (with-window-manager +min-screen-width+ +min-screen-height+
-              (let ((maxrows (screen-height (get-window-manager)))
-                    (maxcols (screen-width (get-window-manager))))
+              (let ((maxrows (screen-height (default-window-manager)))
+                    (maxcols (screen-width (default-window-manager))))
                 (setf *message-view* (make-message-view 0
                                                         (1- maxrows)
                                                         maxcols

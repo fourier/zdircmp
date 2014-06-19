@@ -275,7 +275,7 @@ the screen
       (process-backspace v)
       ;; otherwise process other keys
       (alexandria:switch (key)
-        (+KEY-ESC+ (quit-application (get-window-manager)))
+        (+KEY-ESC+ (zdircmp.ui.wm:quit-application (zdircmp.ui.wm:default-window-manager)))
         (+KEY-UP+ (process-up v))
         (+KEY-DOWN+ (process-down v))
         (+KEY-LEFT+ (process-left v))
@@ -376,8 +376,8 @@ and redraws all data inside"
 
 (defun color-for-diff (diff)
   (case diff
-    ('zdircmp.model.node::diff :red)
-    ('zdircmp.model.node::new  :cyan)
+    (#.'zdircmp.model.node::diff :red)
+    (#.'zdircmp.model.node::new  :cyan)
     (t :white)))
 
 (defun inverse-color (color)

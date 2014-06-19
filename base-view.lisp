@@ -98,7 +98,7 @@ in classes which use not default client rect"))
     (update-client-rect v)
     (refresh v)
     (cl-ncurses:wrefresh (window v))
-    (zdircmp.ui.wm:push-window (zdircmp.ui.wm:get-window-manager) v)))
+    (zdircmp.ui.wm:push-window (zdircmp.ui.wm:default-window-manager) v)))
 
 (defmethod update-client-rect ((v view))
   (with-slots (window-rect client-rect) v

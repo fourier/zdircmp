@@ -29,7 +29,7 @@
         :zdircmp.view.mixin)
   (:shadowing-import-from :zdircmp.view.mixin :refresh)
   (:export :with-window-manager
-           :get-window-manager
+           :default-window-manager
            :screen-width
            :screen-height
            :push-window
@@ -116,7 +116,7 @@
        (endwin)))))
 
 
-(defun get-window-manager ()
+(defun default-window-manager ()
   *global-window-manager*)
 
 (defgeneric update-screen-size (wm width height)

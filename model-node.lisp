@@ -55,9 +55,11 @@
   "Activity function to report activity update from model")
 
 (defun message (str)
+  (declare (function *message-fun*))
   (when *message-fun* (funcall *message-fun* str)))
 
 (defun update-activity ()
+  (declare (function *activity-fun*))
   (when *activity-fun* (funcall *activity-fun*)))
 
 
@@ -129,9 +131,9 @@
   (let* ((f1 (namestring (file-exists-p file1)))
          (f2 (namestring (file-exists-p file2)))
          (cmd #+asdf3
-              `(asdf/run-program:run-program (list "cmp" "-s" ,f1 ,f2) :ignore-error-status t :output nil :error-output nil)
-              #-asdf3
-              `(asdf:run-shell-command (format nil "cmp -s \"~a\" \"~a\"" ,f1 ,f2))))
+           `(asdf/run-program:run-program (list "cmp" "-s" ,f1 ,f2) :ignore-error-status t :output nil :error-output nil)
+           #-asdf3
+           `(asdf:run-shell-command (format nil "cmp -s \"~a\" \"~a\"" ,f1 ,f2))))
     (eq (eval cmd) 0)))
 
 
@@ -241,9 +243,10 @@ the rest is the combined list of nodes"
                     :different nil))
              ;; 1. find if the file is in the second directory and the type
              ;;    is the same - i.e. both are directories or both are files
-             (file2 (find-if #'(lambda (x) (and (string-equal (file-short-name x)
-                                                              simple-name)
-                                                (eq isdir (file-directory-p x))))
+             (file2 (find-if #'(lambda (x)
+                                 (and (string-equal (file-short-name x)
+                                                    simple-name)
+                                      (eq isdir (file-directory-p x))))
                              list2)))
         ;; 2. if it is not in the second directory, add it as a node
         (if (not file2)

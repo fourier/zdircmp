@@ -8,6 +8,7 @@ Requirements
 ============
 In order to build one need to have installed and available:
 * [SBCL](http://www.sbcl.org) - install through your package manager
+* [Alexandria](http://common-lisp.net/project/alexandria/) - install through [quicklisp](http://www.quicklisp.org)
 * [CL-FAD](http://weitz.de/cl-fad/) - install through [quicklisp](http://www.quicklisp.org)
 * [CL-NCURSES](http://common-lisp.net/project/cl-ncurses/) - install through [quicklisp](http://www.quicklisp.org)
 
