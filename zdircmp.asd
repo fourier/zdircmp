@@ -8,6 +8,7 @@
                  (:file "export-util")
                  (:file "command-ui")
                  (:file "mixin-view")
+                 (:file "mixin-message")
                  (:file "constants"
                         :depends-on ("export-util"))
                  (:file "utils-ui"
@@ -18,11 +19,13 @@
                         :depends-on ("utils-ui" "mixin-view" "constants"))
                  (:file "bordered-view"
                         :depends-on ("utils-ui" "base-view"))
-                 (:file "message-view" :depends-on ("utils-ui" "base-view"))
+                 (:file "message-view" :depends-on ("utils-ui"
+                                                    "base-view"
+                                                    "mixin-message"))
                  (:file "status-view" :depends-on ("util" "utils-ui" "base-view"))
                  (:file "help-view" :depends-on ("util" "utils-ui" "base-view"))
                  (:file "model-node"
-                        :depends-on ("util"))
+                        :depends-on ("util" "mixin-message"))
                  (:file "model-tree"
                         :depends-on ("util" "model-node"))
                  (:file "main-view"

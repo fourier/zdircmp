@@ -125,7 +125,7 @@
                                     (zdircmp.model.node::create-root-node
                                      left-path
                                      right-path
-                                     :message-function (curry #'message *message-view*)
+                                     :message-observer  *message-view*
                                      :activity-function (curry #'update-activity *message-view*))))
                   (message *message-view* "Press F1 for quick help, ESC to exit"))))))))
 

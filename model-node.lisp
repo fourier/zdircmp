@@ -48,15 +48,15 @@
 
 (declaim (optimize speed))
 
-(defvar *message-fun* nil
-  "Message function to report from model")
+(defvar *message-observer* nil
+  "Observer implementing zdircmp.ui.message interface")
 
 (defvar *activity-fun* nil
   "Activity function to report activity update from model")
 
 (defun message (str)
-  (declare (function *message-fun*))
-  (when *message-fun* (funcall *message-fun* str)))
+  (when *message-observer*
+    (zdircmp.ui.message::message *message-observer* str)))
 
 (defun update-activity ()
   (declare (function *activity-fun*))
@@ -315,13 +315,13 @@ the rest is the combined list of nodes"
     ;; result is a pair: difference status and nodes list
     (cons different-dir result)))
 
-(defun create-root-node (dir1 dir2 &key (message-function nil)
+(defun create-root-node (dir1 dir2 &key (message-observer nil)
                                      (activity-function nil))
   (unless (file-directory-p dir1)
     (error (format nil "Path ~a is not a directory" dir1)))
   (unless (file-directory-p dir2)
     (error (format nil "Path ~a is not a directory" dir2)))
-  (setf *message-fun* message-function)
+  (setf *message-observer* message-observer)
   (setf *activity-fun* activity-function)
   (message (concat "Comparing " dir1 " and " dir2 " ..."))
   (let* ((model 

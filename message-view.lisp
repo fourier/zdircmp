@@ -26,6 +26,7 @@
   (:use ::common-lisp :cl-ncurses :zdircmp.view.base :zdircmp.ui.utils)
   ;; shadowing refresh from cl-ncurses, we use the one in base-view
   (:shadowing-import-from :zdircmp.view.base :refresh)
+  (:import-from :zdircmp.ui.message :message-mixin :message)
   (:export :make-message-view
            :message
            :show-activity
@@ -33,8 +34,7 @@
            :update-activity))
 
 (in-package :zdircmp.view.message)
-
-(defclass message-view (view)
+(defclass message-view (view message-mixin)
   ((last-message :initform nil
                  :accessor last-message
                  :documentation "Last message")
@@ -58,10 +58,6 @@ one of the following: [-] [\] [|] [/] [-] [\] [|] [/]"))
                   :y y
                   :width width
                   :height height)))
-
-
-(defgeneric message (v str &rest arguments)
-  (:documentation "Prints a message in a message view"))
 
 (defmethod message ((v message-view) str &rest arguments)
   (let ((msg 
