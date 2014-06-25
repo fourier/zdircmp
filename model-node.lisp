@@ -51,16 +51,16 @@
 (defvar *message-observer* nil
   "Observer implementing zdircmp.ui.message interface")
 
-(defvar *activity-fun* nil
-  "Activity function to report activity update from model")
+(defvar *activity-observer* nil
+  "Observer implementing activity updates, zdircmp.ui.activity")
 
 (defun message (str)
   (when *message-observer*
     (zdircmp.ui.message::message *message-observer* str)))
 
 (defun update-activity ()
-  (declare (function *activity-fun*))
-  (when *activity-fun* (funcall *activity-fun*)))
+  (when *activity-observer*
+    (zdircmp.ui.activity::update-activity *activity-observer*)))
 
 
 ;; Create a struct diff-node with defined fielsd and getters/setters
@@ -316,13 +316,13 @@ the rest is the combined list of nodes"
     (cons different-dir result)))
 
 (defun create-root-node (dir1 dir2 &key (message-observer nil)
-                                     (activity-function nil))
+                                     (activity-observer nil))
   (unless (file-directory-p dir1)
     (error (format nil "Path ~a is not a directory" dir1)))
   (unless (file-directory-p dir2)
     (error (format nil "Path ~a is not a directory" dir2)))
   (setf *message-observer* message-observer)
-  (setf *activity-fun* activity-function)
+  (setf *activity-observer* activity-observer)
   (message (concat "Comparing " dir1 " and " dir2 " ..."))
   (let* ((model 
           (make-diff-node

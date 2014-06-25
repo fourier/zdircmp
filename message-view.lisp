@@ -23,10 +23,14 @@
 
 ;;; Code:
 (defpackage :zdircmp.view.message
-  (:use ::common-lisp :cl-ncurses :zdircmp.view.base :zdircmp.ui.utils)
+  (:use ::common-lisp
+        :cl-ncurses
+        :zdircmp.view.base
+        :zdircmp.ui.utils
+        :zdircmp.ui.message
+        :zdircmp.ui.activity)
   ;; shadowing refresh from cl-ncurses, we use the one in base-view
   (:shadowing-import-from :zdircmp.view.base :refresh)
-  (:import-from :zdircmp.ui.message :message-mixin :message)
   (:export :make-message-view
            :message
            :show-activity
@@ -34,7 +38,7 @@
            :update-activity))
 
 (in-package :zdircmp.view.message)
-(defclass message-view (view message-mixin)
+(defclass message-view (view message-mixin activity-mixin)
   ((last-message :initform nil
                  :accessor last-message
                  :documentation "Last message")
@@ -86,10 +90,6 @@ one of the following: [-] [\] [|] [/] [-] [\] [|] [/]"))
   (setf (activity-indicator-state v) 0)
   (setf (activity-indicator-visible v) show)
   (refresh v))
-
-
-(defgeneric update-activity (v)
-  (:documentation "Update the activity indicator if visible"))
 
 (defmethod update-activity ((v message-view))
   (when (activity-indicator-visible v)

@@ -126,7 +126,7 @@
                                      left-path
                                      right-path
                                      :message-observer  *message-view*
-                                     :activity-function (curry #'update-activity *message-view*))))
+                                     :activity-observer *message-view*)))
                   (message *message-view* "Press F1 for quick help, ESC to exit"))))))))
 
 
