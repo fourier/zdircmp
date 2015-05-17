@@ -113,6 +113,7 @@
           (dolist (,win-name (windows *global-window-manager*))
             (destroy ,win-name)))
      (progn
+       (format *error-output* "Cannot initialize ncurses?")
        (endwin)))))
 
 
