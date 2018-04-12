@@ -5,7 +5,7 @@
           (load quicklisp-init)))
 
 ;; add Sources/ directory to quicklisp local directories
-(push #P"/Users/alexeyv/Sources/" ql:*local-project-directories*)
+(push #P"/home/fourier/Sources/lisp" ql:*local-project-directories*)
 (ql:register-local-projects)
 
 ;;(ql:quickload :swank)
